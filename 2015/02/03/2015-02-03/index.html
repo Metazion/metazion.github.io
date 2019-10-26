@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=6.2.0" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.2.0" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  普通select不加锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）  锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题    事务  四个特性：原">
+<meta name="keywords" content="InnoDB,MySQL,数据库">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL InnoDB存储引擎要点">
+<meta property="og:url" content="https://qilu.me/2015/02/03/2015-02-03/index.html">
+<meta property="og:site_name" content="樂只君子">
+<meta property="og:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  普通select不加锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）  锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题    事务  四个特性：原">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://qilu.me/2015/02/03/2015-02-03/innodb_sketch.jpg">
+<meta property="og:updated_time" content="2019-10-26T13:33:09.106Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL InnoDB存储引擎要点">
+<meta name="twitter:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  普通select不加锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）  锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题    事务  四个特性：原">
+<meta name="twitter:image" content="https://qilu.me/2015/02/03/2015-02-03/innodb_sketch.jpg">
+
+
+
+
+
+
+  <link rel="canonical" href="https://qilu.me/2015/02/03/2015-02-03/">
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL InnoDB存储引擎要点 | 樂只君子</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">樂只君子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">起舞弄清影</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br>关于</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/02/03/2015-02-03/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Kaleo Feng">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="樂只君子">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL InnoDB存储引擎要点
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2015-02-03 18:00:00" itemprop="dateCreated datePublished" datetime="2015-02-03T18:00:00+08:00">2015-02-03</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Tech/" itemprop="url" rel="index"><span itemprop="name">Tech</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>支持功能:</p>
+<ul>
+<li><p>行级锁</p>
+<ul>
+<li><p>四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁</p>
+</li>
+<li><p>普通select不加锁，insert、update、delete加排他锁</p>
+</li>
+<li><p>三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）</p>
+</li>
+<li><p>锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题</p>
+</li>
+</ul>
+</li>
+<li><p>事务</p>
+<ul>
+<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过锁实现，原子性、一致性、持久性通过redo和undo实现</p>
+</li>
+<li><p>通过redo Log（重做日志）和undo Log（撤消日志）保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>存储结构：</p>
+<ul>
+<li><p>表空间（tablespace）</p>
+<ul>
+<li><p>共享表空间，存储undo信息、插入缓冲索引也、系统事务信息、两次写缓冲等</p>
+</li>
+<li><p>单独表空间（可选），存储数据、索引和插入缓冲Bitmap页</p>
+</li>
+<li><p>索引组织的，数据即索引，索引即数据，B+树结构</p>
+</li>
+</ul>
+</li>
+<li><p>段（segment）</p>
+<ul>
+<li><p>数据段</p>
+</li>
+<li><p>索引段</p>
+</li>
+<li><p>undo段</p>
+</li>
+</ul>
+</li>
+<li><p>区（extent）</p>
+</li>
+<li><p>页（page）</p>
+<ul>
+<li><p>数据页（B+tree Node）</p>
+</li>
+<li><p>undo页</p>
+</li>
+<li><p>系统页</p>
+</li>
+<li><p>事务数据页</p>
+</li>
+<li><p>插入缓冲位图页</p>
+</li>
+<li><p>插入缓冲空闲列表页</p>
+</li>
+<li><p>未压缩的二进制大对象页</p>
+</li>
+<li><p>压缩的二进制大对象页</p>
+</li>
+</ul>
+</li>
+<li><p>行（row）</p>
+<ul>
+<li>三个隐藏字段：隐藏的ID（可能）、6字节的事务ID（DB_TRX_ID）、 7字节的回滚指针（DB_ROLL_PTR）</li>
+</ul>
+</li>
+<li><p>实现上每个页对应一个B+tree Node，页大小和行大小决定了每个节点记录数</p>
+</li>
+<li><p>默认每个段4个区，每区64个页，每页16K，每个页最少存储2行记录，即每行不超过8K，超出则行外存储至二进制大对象页</p>
+</li>
+<li><p>不考虑每页页头等数据，简化计算，非叶子节点每个条目至少包含一个8字节key和6字节指向子节点的指针，则每个非叶子节点最大可以有16K/14个条目；假设每条数据记录大小为1K，每个叶子节点页面可以存储16K/1K=16行数据记录；一个三层B+数最大可以存储(16K/14) <em> (16K/14) </em> (16K/1k) = 2191万行数据记录</p>
+</li>
+</ul>
+<p>缓冲池：</p>
+<ul>
+<li><p>普通缓冲池</p>
+<ul>
+<li><p>数据页</p>
+</li>
+<li><p>索引页</p>
+</li>
+<li><p>插入缓冲，辅助索引插入优化</p>
+</li>
+<li><p>自适应哈希索引，索引效率优化</p>
+</li>
+<li><p>锁信息</p>
+</li>
+<li><p>数据字典信息</p>
+</li>
+</ul>
+</li>
+<li><p>重做日志缓冲池</p>
+</li>
+<li><p>额外缓冲池</p>
+<ul>
+<li>缓冲池的数据结构本身、帧缓冲、缓冲控制对象等</li>
+</ul>
+</li>
+<li><p>两次写，LRU</p>
+</li>
+</ul>
+<p>索引 ：</p>
+<ul>
+<li><p>聚集索引</p>
+<ul>
+<li>key为索引值，value为行数据</li>
+</ul>
+</li>
+<li><p>辅助索引</p>
+<ul>
+<li>key为索引值，value为聚集索引键</li>
+</ul>
+</li>
+<li><p>采用B+树，非叶节点无数据，2到3层高度，减少磁盘IO次数</p>
+</li>
+</ul>
+<p>线程：</p>
+<ul>
+<li><p>Master Thread</p>
+<ul>
+<li>合并插入缓冲、脏页刷新（已单独）、undo页回收（已单独）等</li>
+</ul>
+</li>
+<li><p>IO Thread</p>
+<ul>
+<li>读（页）线程、写（页）线程、插入缓冲线程、日志线程</li>
+</ul>
+</li>
+<li><p>Purge Thread</p>
+<ul>
+<li>undo页回收</li>
+</ul>
+</li>
+<li><p>Page Cleaner Thread</p>
+<ul>
+<li>脏页刷新</li>
+</ul>
+</li>
+</ul>
+<p>MVCC:</p>
+<ul>
+<li><p>事务以排他锁的形式修改原始数据</p>
+</li>
+<li><p>把修改前的数据存放于undo log，通过回滚指针与主数据关联</p>
+</li>
+<li><p>修改成功（commit）什么都不做，失败则恢复undo log中的数据（rollback）</p>
+</li>
+</ul>
+<p>InnoDB的操作可以分为当前读(current read)和快照读(snapshot read)：</p>
+<ul>
+<li><p>快照读(snapshot read)</p>
+<ul>
+<li>简单的select操作(不包括 select … lock in share mode, select … for update)</li>
+</ul>
+</li>
+<li><p>当前读(current read)</p>
+<ul>
+<li><p>select … lock in share mode</p>
+</li>
+<li><p>select … for update</p>
+</li>
+<li><p>insert</p>
+</li>
+<li><p>update</p>
+</li>
+<li><p>delete</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>快照读是通过MVVC来实现的，并没有真正解决不可重复读和幻读，只是读取历史快照而绕过，表现为避免了两个问题</p>
+<p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略，解决了不可重复读和幻读</p>
+<ul>
+<li><p>脏读：写加排它锁，事务结束释放；读加共享锁，读完立刻释放</p>
+</li>
+<li><p>不可重复读：写加排它锁，事务结束释放；读加共享锁，事务结束释放</p>
+</li>
+<li><p>幻读：写加排它锁，事务结束释放；读加间隙锁，事务结束释放</p>
+</li>
+</ul>
+<p>隔离级别不同，索引类型不同，加锁策略也不同：</p>
+<ul>
+<li><p>唯一索引：目标记录加record lock</p>
+</li>
+<li><p>非唯一索引：目标记录加record lock + gap lock</p>
+</li>
+<li><p>非索引：所有记录加record lock</p>
+</li>
+</ul>
+<p>最后附手写图一张：<br><img src="/2015/02/03/2015-02-03/innodb_sketch.jpg" alt></p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/InnoDB/" rel="tag"># InnoDB</a>
+          
+            <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+          
+            <a href="/tags/数据库/" rel="tag"># 数据库</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/01/17/2015-01-17/" rel="next" title="C++14 变长参数模板（Variadic templates）的适用场景">
+                <i class="fa fa-chevron-left"></i> C++14 变长参数模板（Variadic templates）的适用场景
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/03/14/2015-03-14/" rel="prev" title="动态链接库函数重定位与延迟绑定">
+                动态链接库函数重定位与延迟绑定 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Kaleo Feng</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">34</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">4</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">62</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Kaleo Feng</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/theme-next/hexo-theme-next">NexT.Gemini</a> v6.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.2.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.2.0"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.2.0"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.2.0"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.2.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.2.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.2.0"></script>
+
+
+
+  
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
