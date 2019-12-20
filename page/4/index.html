@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2018/04/27/2018-04-27/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2018/10/18/2018-10-18/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/04/27/2018-04-27/" itemprop="url">
-                  Sublime Text3时间戳查看转换插件开发
+                <a class="post-title-link" href="/2018/10/18/2018-10-18/" itemprop="url">
+                  Java并发工具之AQS：共享模式实现细节
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2018-04-27 17:00:00" itemprop="dateCreated datePublished" datetime="2018-04-27T17:00:00+08:00">2018-04-27</time>
+              <time title="创建时间：2018-10-18 21:00:00" itemprop="dateCreated datePublished" datetime="2018-10-18T21:00:00+08:00">2018-10-18</time>
             
 
             
@@ -383,14 +383,129 @@
       
         
           
-            <p>平常配置表中，经常需要用到时间配置，比如活动开始结束。从可读性上，我们喜欢 <code>2017-04-27 17:00:00</code>，从程序角度，我们喜欢用 <code>493283600</code>。前者是包含时区概念的，而后者时区无关，所以一般推荐直接使用数字时间戳格式来配置。</p>
-<p>实际配置时，之前一直用MySQL的 <code>FROM_UNIXTIME()</code> 和 <code>UNIX_TIMESTAMP</code> 函数，或者使用网页工具进行时间戳查看转换，十分繁琐。</p>
-<p>做得多了，就想到为什么不写个插件，直接在编辑器里查看转换好了。参考了网络上的一些示例并查阅了Sublime的相关API，过程如下。</p>
-<p>1.依次执行 <strong>Tools</strong> -&gt; <strong>Developer</strong> -&gt; <strong>New Plugin</strong>，新建一个插件脚本，命名为 <strong>timestamp.py</strong><br><img src="/2018/04/27/2018-04-27/1.gif" alt="Image Title"></p>
-<p>2.添加脚本代码，具体可以看注释：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> sublime</span><br><span class="line"><span class="keyword">import</span> sublime_plugin</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getParseResult</span><span class="params">(text)</span>:</span></span><br><span class="line">    <span class="comment">#patten1 匹配10位整数时间戳（1493283600）</span></span><br><span class="line">    pattern1 = re.compile(<span class="string">'^\d&#123;10&#125;'</span>)</span><br><span class="line">    match1 = pattern1.match(text)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#pattern2 匹配可读时间格式（2017-04-27 17:00:00）</span></span><br><span class="line">    pattern2 = re.compile(<span class="string">'^(\d&#123;4&#125;)-(\d&#123;1,2&#125;)-(\d&#123;1,2&#125;)\s(\d&#123;1,2&#125;):(\d&#123;1,2&#125;):(\d&#123;1,2&#125;)'</span>)</span><br><span class="line">    match2 = pattern2.match(text)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> text <span class="keyword">in</span> (<span class="string">'now'</span>):</span><br><span class="line">        result = datetime.now().strftime(<span class="string">'%Y-%m-%d %H:%M:%S'</span>)</span><br><span class="line">    <span class="keyword">elif</span> text <span class="keyword">in</span> (<span class="string">'ts'</span>, <span class="string">'timestamp'</span>):</span><br><span class="line">        result = str(time.time()).split(<span class="string">'.'</span>)[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">elif</span> match1:</span><br><span class="line">        timestamp = int(match1.group(<span class="number">0</span>))</span><br><span class="line">        timeArray = time.localtime(timestamp)</span><br><span class="line">        result = time.strftime(<span class="string">'%Y-%m-%d %H:%M:%S'</span>, timeArray)</span><br><span class="line">    <span class="keyword">elif</span> match2:</span><br><span class="line">        timeArray = time.strptime(text, <span class="string">"%Y-%m-%d %H:%M:%S"</span>)</span><br><span class="line">        result = str(time.mktime(timeArray)).split(<span class="string">'.'</span>)[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TimestampCommand</span><span class="params">(sublime_plugin.TextCommand)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self, edit)</span>:</span></span><br><span class="line">        <span class="keyword">for</span> s <span class="keyword">in</span> self.view.sel():</span><br><span class="line">            <span class="keyword">if</span> s.empty() <span class="keyword">or</span> s.size() &lt;= <span class="number">1</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># 只处理第一个Region</span></span><br><span class="line">            text = self.view.substr(s)</span><br><span class="line">            print(text)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 得到转换结果</span></span><br><span class="line">            result = getParseResult(text)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 进行文本替换并弹窗显示</span></span><br><span class="line">            self.view.replace(edit, s, result)</span><br><span class="line">            self.view.show_popup(result, sublime.HIDE_ON_MOUSE_MOVE_AWAY, <span class="number">-1</span>, <span class="number">600</span>, <span class="number">600</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure></p>
-<p>3.进行快捷键绑定，依次执行<strong>Project</strong> -&gt; <strong>Key Bindings</strong>，添加代码<code>{ &quot;keys&quot;: [&quot;ctrl+t&quot;], &quot;command&quot;: &quot;timestamp&quot;}</code><br><img src="/2018/04/27/2018-04-27/2.gif" alt="Image Title"></p>
-<p>很简单，一个方便查看转换时间戳的插件就写好了。选中文本，按快捷键<strong>CTRL+t</strong>，效果图：<br><img src="/2018/04/27/2018-04-27/3.gif" alt="Image Title"></p>
-<p>代码放在了<a href="https://github.com/KaleoFeng/Misc" target="_blank" rel="noopener">Github</a>，更多欢迎访问个人网站<a href="https://www.metazion.com" target="_blank" rel="noopener">Metazion</a></p>
+            <p>AQS(AbstractQueuedSynchronizer)是Java并发编程中最重要的工具之一，基于其实现了ReentrantLock、CountDownLatch、Semaphore和ReentrantReadWriteLock等，可以说是锁的基石。</p>
+<p>在深入AQS细节之前，先介绍另外一个基础工具，AQS使用其来控制线程。</p>
+<h2 id="LockSupport"><a href="#LockSupport" class="headerlink" title="LockSupport"></a>LockSupport</h2><p>顾名思义，是实现锁的辅助工具，其本身与锁无关，只是用来挂起和唤醒线程，主要实现了两个方法。</p>
+<ul>
+<li><p>park<br>挂起当前线程。</p>
+</li>
+<li><p>unpark<br>唤醒指定线程。</p>
+</li>
+</ul>
+<p>采用许可（permit）模型，park消费许可，unpark颁发许可，所以两个方法调用顺序没有影响，unpark也可以重复调用，许可只会有一个。</p>
+<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>AQS本身也与锁无关，只是定义了一个资源和针对该资源的一组操作，比如获取资源、释放资源、资源获取失败线程进入等待队列并挂起，资源释放时唤醒等待线程使重新竞争资源等。</p>
+<p>等待队列采用先入先出（FIFO）队列，一旦进入队列，线程获取资源顺序保持严格有序，即从头结点后继节点依次向后。由于共享模式下多个线程可同时获取资源，为避免惊群效应，节点只关注其前驱节点，前驱节点获得资源成为头结点后，当前节点成为头结点后继节点，才有机会被唤醒并尝试获取资源。</p>
+<p>有两种模式，可以单独或组合使用。</p>
+<h3 id="独占模式（Exclusive）"><a href="#独占模式（Exclusive）" class="headerlink" title="独占模式（Exclusive）"></a>独占模式（Exclusive）</h3><p>资源同时只能被单个线程占有，获取和释放资源只能是一个线程，对应方法 <code>acquire</code> 和 <code>release</code>，模板方法 <code>tryAcquire</code> 和 <code>tryRelease</code>。</p>
+<p>独占模式相对比较简单，所以不费太多笔墨。</p>
+<h3 id="共享模式（Share）"><a href="#共享模式（Share）" class="headerlink" title="共享模式（Share）"></a>共享模式（Share）</h3><p>资源可以同时被多个线程占有，可以有多个线程获取和释放资源，对应方法 <code>acquireShared</code> 和 <code>releaseShared</code>，模板方法 <code>tryAcquireShared</code> 和 <code>tryReleaseShared</code>。</p>
+<p>先看一下方法源码，基于 <strong>OpenJDK 9</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquireShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tryAcquireShared(arg) &lt; <span class="number">0</span>)</span><br><span class="line">        doAcquireShared(arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">releaseShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tryReleaseShared(arg)) &#123;</span><br><span class="line">        doReleaseShared();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>模板方法 <code>tryAcquireShared</code> 和 <code>tryReleaseShared</code> 需要派生类实现，用来表达自己逻辑意义上的获取资源和释放资源行为。</p>
+<p>再看一下三个关键方法源码。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Node</span> </span>&#123;</span><br><span class="line">        <span class="comment">/** Marker to indicate a node is waiting in shared mode */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> Node SHARED = <span class="keyword">new</span> Node();</span><br><span class="line">        <span class="comment">/** Marker to indicate a node is waiting in exclusive mode */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> Node EXCLUSIVE = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** waitStatus value to indicate thread has cancelled. */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> CANCELLED =  <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/** waitStatus value to indicate successor's thread needs unparking. */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> SIGNAL    = -<span class="number">1</span>;</span><br><span class="line">        <span class="comment">/** waitStatus value to indicate thread is waiting on condition. */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> CONDITION = -<span class="number">2</span>;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * waitStatus value to indicate the next acquireShared should</span></span><br><span class="line"><span class="comment">         * unconditionally propagate.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> PROPAGATE = -<span class="number">3</span>;</span><br></pre></td></tr></table></figure>
+<p><img src="/2018/10/18/2018-10-18/aqs_shared.png" alt="shared"></p>
+<p>上面提到过，共享模式下，可以有多个线程占有资源，采用从头结点依次唤醒后继节点的方式，所以 <code>acquireShared</code> 和 <code>releaseShared</code> 都会调用到 <code>doReleaseShared</code>，该方法即用来执行唤醒后继节点的操作。</p>
+<p>根据源码，两个模板方法有以下含义。</p>
+<ul>
+<li><p>tryAcquireShared<br>返回值类型为int，&lt;0表示获取资源失败，线程需要进入等待队列并挂起，&gt;=0表示获取资源成功，如果线程在等待队列，所在节点变为头结点，其中&gt;0表明还有剩余资源，需要唤醒后继节点线程去尝试获取资源。此种情况下只能唤醒后继共享节点，因为前面是共享节点线程获取到资源，只有同类的共享模式线程有资格”分享”剩余资源。</p>
+</li>
+<li><p>tryReleaseShared<br>返回值类型为boolean，false为释放资源失败，true为释放资源成功，需要尝试唤醒后继节点线程去获取资源。此种情况下可以唤醒后继独占或共享节点，因为是资源被释放，独占或共享模式线程都有资格竞争资源。</p>
+</li>
+</ul>
+<p>这种从头结点后继节点依次唤醒的设计，称作 <strong>propagate</strong>，意为传播。纵观整个设计逻辑，可以得到一个规则：一旦释放资源成功，在等待队列中的节点应该有机会被传播到，从而节点线程被唤醒重新尝试获取资源，即传播链应该始终存在，不能中断，因为一旦中断，等待队列中的节点就可能会永远hang住无法被唤醒，整个AQS就失效了。这个规则是后续讨论的基础。</p>
+<p>整体实现逻辑可以自行阅读理解，不再赘述，下面探讨部分重要的实现细节。</p>
+<p>图上红字提出了4个问题：</p>
+<ol>
+<li><p><code>doReleaseShared</code> 为什么使用for循环？</p>
+</li>
+<li><p><code>doReleaseShared</code> 中的 <em>PROPAGATE</em> 状态有什么意义？</p>
+</li>
+<li><p><code>doReleaseShared</code> 为什么在 <code>h == head</code> 时才break，即为什么head改变要重试？</p>
+</li>
+<li><p><code>setHeadAndPropagate</code> 为什么要同时判断新老两个head结点的waitStatus？</p>
+</li>
+</ol>
+<p>我们构造若干并发场景，尝试解答。</p>
+<h5 id="场景一"><a href="#场景一" class="headerlink" title="场景一"></a>场景一</h5><p>假定此时，无问题1-4中的所有元素。</p>
+<p>此时等待队列如图所示：</p>
+<p><img src="/2018/10/18/2018-10-18/1.png" alt="scene1"></p>
+<ol>
+<li><p>T<sub>A</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，此时 <code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 被唤醒，<code>tryAcquireShared</code> 获取资源成功，<code>r = 0</code>，执行 <code>setHeadAndPropagate</code> 至 <code>setHead</code> 前，此时 <code>propagate = r = 0</code>。</p>
+</li>
+<li><p>T<sub>B</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，由于此时 <code>h = head, h.waitStatus = 0</code>，CAS失败，无法唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 继续执行，由于 <code>propagate = 0, h.waitStatus = 0</code>，无法调用 <code>doReleaseShared</code>唤醒后继节点。</p>
+</li>
+</ol>
+<p>此场景下，T<sub>B</sub> 的资源释放丢失了，传播链中断，违背了上面提到的规则，AQS失效。</p>
+<h5 id="场景二"><a href="#场景二" class="headerlink" title="场景二"></a>场景二</h5><p>环境同场景一，但加入问题2的 <em>PROPAGATE</em> 状态。</p>
+<ol>
+<li><p>T<sub>A</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，此时 <code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 被唤醒，<code>tryAcquireShared</code> 获取资源成功，<code>r = 0</code>，执行 <code>setHeadAndPropagate</code> 至 <code>setHead</code> 前，此时 <code>propagate = r = 0</code>。</p>
+</li>
+<li><p>T<sub>B</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，由于此时 <code>h = head, h.waitStatus = 0</code>，走 <code>else if</code> 逻辑，CAS成功，<code>h.waitStatus = PROPAGATE</code>。</p>
+</li>
+<li><p>T<sub>1</sub> 继续执行，由于 <code>propagate = 0, h.waitStatus = PROPAGATE &lt; 0</code>，调用 <code>doReleaseShared</code>唤醒后继节点。</p>
+</li>
+</ol>
+<p>加入 <em>PROPAGATE</em> 状态后，传播链得以延续。</p>
+<p>但仅仅加入 <em>PROPAGATE</em> 状态是否就可以了呢？</p>
+<h5 id="场景三"><a href="#场景三" class="headerlink" title="场景三"></a>场景三</h5><p>环境同场景二。</p>
+<ol>
+<li><p>T<sub>A</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，此时 <code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 被唤醒，<code>tryAcquireShared</code> 获取资源成功，<code>r = 0</code>，执行 <code>setHeadAndPropagate</code> 至 <code>setHead</code> 前，此时 <code>propagate = r = 0</code>。</p>
+</li>
+<li><p>T<sub>B</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code> 至 <code>Node h = head</code> 后。</p>
+</li>
+<li><p>T<sub>1</sub> 继续执行，由于 <code>propagate = 0, h.waitStatus = 0</code>，无法调用 <code>doReleaseShared</code>唤醒后继节点。</p>
+</li>
+<li><p>T<sub>B</sub> 继续执行，此时 <code>h.waitStatus = 0</code>，走 <code>else if</code> 逻辑，CAS成功，<code>h.waitStatus = PROPAGATE</code>。</p>
+</li>
+</ol>
+<p>此场景下，操作5已经没有意义，传播链已经中断。</p>
+<p>可见，仅仅加入 <em>PROPAGATE</em> 是不够的。场景三的问题出在，进行操作5时，head已经变成新的（即原head的后继节点），再把旧的 <code>head.waitStatus</code> 设置为 <em>PROPAGATE</em> 状态起不到任何作用。</p>
+<h5 id="场景四"><a href="#场景四" class="headerlink" title="场景四"></a>场景四</h5><p>环境同场景三，但加入问题3的 <code>h == head</code>，这样必然可能要重试，所以也要加入问题1的 <code>for</code>。</p>
+<ol>
+<li><p>T<sub>A</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，此时 <code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 被唤醒，<code>tryAcquireShared</code> 获取资源成功，<code>r = 0</code>，执行 <code>setHeadAndPropagate</code> 至 <code>setHead</code> 前，此时 <code>propagate = r = 0</code>。</p>
+</li>
+<li><p>T<sub>B</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code> 至 <code>Node h = head</code> 后。</p>
+</li>
+<li><p>T<sub>1</sub> 继续执行，由于 <code>propagate = 0, h.waitStatus = 0</code>，无法调用 <code>doReleaseShared</code>唤醒后继节点。</p>
+</li>
+<li><p>T<sub>B</sub> 继续执行，此时 <code>h.waitStatus = 0</code>，走 <code>else if</code> 逻辑，CAS成功，<code>h.waitStatus = PROPAGATE</code>；继续执行，由于head已经在操作4中改变， <code>h == head</code> 返回false，无法退出for循环，将进行重试，<code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+</ol>
+<p>加入 <code>for</code> 和 <code>h == head</code> 后，传播链得以延续。</p>
+<p>这样就毫无破绽万事大吉了吗？</p>
+<h5 id="场景五"><a href="#场景五" class="headerlink" title="场景五"></a>场景五</h5><p>假定此时，有问题1-3中的元素，无问题4中的元素，即不会获取新head并检查其waiStatus，对应代码中的 <code>(h = head) == null || h.waitStatus &lt; 0</code>（旧head的waitStatus检查的必要性已经在上述场景中证明过了）。</p>
+<p>此时等待队列如图所示：</p>
+<p><img src="/2018/10/18/2018-10-18/2.png" alt="scene2"></p>
+<ol>
+<li><p>T<sub>A</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，此时 <code>h = head, h.waitStatus = SIGNAL</code>，CAS成功，<code>h.waitStatus = 0</code>，调用<code>unparkSuccessor</code> 唤醒后继节点。</p>
+</li>
+<li><p>T<sub>1</sub> 被唤醒，<code>tryAcquireShared</code> 获取资源成功，<code>r = 0</code>，执行 <code>setHeadAndPropagate</code> 至 <code>setHead</code> 后，head改变为T<sub>1</sub>节点记为h1，h仍为旧head，此时 <code>h.waitStatus = 0, h1.waitStatus = 0</code>（因为T<sub>1</sub> 没有后继节点，其waitStatus默认为0）。</p>
+</li>
+<li><p>T<sub>2</sub> <code>acquireShared</code>，调用 <code>tryAcquireShared</code> 获取资源，由于此时没有多余资源，获取资源失败，进入等待队列，执行至 <code>shouldParkAfterFailedAcquire</code> 前，此时 T<sub>2</sub> 已成为 T<sub>1</sub><br>也即head的后继节点，但因为尚未park，仍然 <code>h1 = head, h1.waitStatus = 0</code>。</p>
+</li>
+<li><p>T<sub>B</sub> <code>releaseShared</code> 调用 <code>tryReleaseShared</code> 释放资源成功，执行 <code>doReleaseShared</code>，<code>h = head, h.waitStatus = 0</code>，走 <code>else if</code> 逻辑，CAS成功，<code>h.waitStatus = PROPAGATE</code>。</p>
+</li>
+<li><p>T<sub>1</sub> 继续执行，由于 <code>propagate = 0, h.waitStatus = 0</code>，无法调用 <code>doReleaseShared</code>唤醒后继节点。</p>
+</li>
+<li><p>T<sub>2</sub> 继续执行，park至head后继节点，<code>head.waitStatus = SIGNAL</code>。</p>
+</li>
+</ol>
+<p>此场景下，操作6已经没有意义，传播链已经中断。</p>
+<p>可见，这样是不够的，因为操作4修改的是新head，但操作5只检查了旧head，导致没有起到效果。</p>
+<p>加入问题4的元素 <code>(h = head) == null || h.waitStatus &lt; 0</code> 后，显而易见，操作5中会检查新head的waitStatus，因为其在操作4中已经被置为 <em>PROPAGATE</em>，所以检查结果为true，进而调用到<code>doReleaseShared</code> 唤醒后继节点，无论T<sub>2</sub> 是否park，都可以被唤醒，传播链得以延续。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>以上通过构建若干并发场景，验证了AQS部分实现细节的必要性，也见识了设计的精巧细致。理解了AQS共享模式，再去看独占模式就相对容易了。及至基于此实现的各种锁，也就不难理解和掌握了。</p>
 
           
         
@@ -433,7 +548,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/35/">35</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -476,7 +591,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">34</span>
+                    <span class="site-state-item-count">35</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -634,7 +749,19 @@
                     
                       
                     
-                    <span class="site-state-item-count">62</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">68</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

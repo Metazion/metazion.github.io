@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/08/07/2014-08-07/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/08/20/2014-08-20/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2014/08/07/2014-08-07/" itemprop="url">
-                  网络编程之TCP/IP协议族-传输层UDP协议
+                <a class="post-title-link" href="/2014/08/20/2014-08-20/" itemprop="url">
+                  C++11封装Linux内核版红黑树
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2014-08-07 20:00:00" itemprop="dateCreated datePublished" datetime="2014-08-07T20:00:00+08:00">2014-08-07</time>
+              <time title="创建时间：2014-08-20 17:00:00" itemprop="dateCreated datePublished" datetime="2014-08-20T17:00:00+08:00">2014-08-20</time>
             
 
             
@@ -347,7 +347,7 @@
                 <span class="post-meta-item-text">分类于</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Lore/" itemprop="url" rel="index"><span itemprop="name">Lore</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Tech/" itemprop="url" rel="index"><span itemprop="name">Tech</span></a></span>
 
                 
                 
@@ -383,29 +383,14 @@
       
         
           
-            <p>UDP是一个简单的面向数据报的协议：每个应用层数据包在该层正好封装成一个UDP数据报，并交给IP协议发送。</p>
-<p>与TCP类似，封装UDP数据包的过程会添加一个UDP首部，其格式如下（图片来自网络）。<br><img src="/2014/08/07/2014-08-07/udp.png" alt="Image Title"></p>
-<ul>
-<li><p>源端口号：2个字节，发送端端口号。</p>
-</li>
-<li><p>目的端口号：2个字节，接收端端口号。</p>
-</li>
-<li><p>UDP长度：2个字节，包含首部和数据，8个字节为单位。</p>
-</li>
-<li><p>UDP检验和：2个字节，覆盖首部和数据。</p>
-</li>
-</ul>
-<p>相较于TCP，UDP是个简单协议。它不会对数据做过多处理，也不提供可靠性、流量控制和差错恢复等功能。应用层数据由UDP添加一个首部，然后到达传输层，IP协议将其组装成一个待发送的IP数据报。UDP是面向数据报的，必然有一个最大数据长度。理论上，由于IP首部总长度为2个字节，故最大长度是65535字节，除去IP首部长度20字节，UDP数据报最大长度为65515字节。实际上，因为实现上的区别，一般小于此值。</p>
-<p>前面文章说过，数据在传输过程中，IP协议会将较大的数据报分片。同时标准规定，主机必须能够接受最小576字节的IP数据报。所以许多UDP应用程序设计中，应用层数据长度被限制成512字节或更小。应用层应该选择合适的报文大小。</p>
-<p>UDP无连接，传输数据不需要建立和断开连接，所以开销更小。但不保证可靠性，所以可能丢包，数据也可能失序。</p>
-<p>TCP协议与UDP协议的选择。</p>
-<ul>
-<li><p>TCP：数据传输的性能必须让位于数据传输的完整性、可控制性和可靠性时。</p>
-</li>
-<li><p>UDP：强调传输性能而不是传输的完整性时，如音频和多媒体应用；或者数据传输时间很短，以至于此前的连接过程成为整个流量主体的情况。</p>
-</li>
-</ul>
-<p>值得一提的是，IP支持单播、广播和多播，广播和多播仅应用于UDP，它们对需要将报文同时传往多个接收者的应用来说十分重要。具体细节暂不表述。</p>
+            <p>红黑树是一种非常重要的数据结构，典型的用途是实现关联数组，STL中Map和Set的底层数据结构就是红黑树。</p>
+<p>红黑树理解起来不算难，但写出正确且高效的实现却不容易。Linux内核中有份C语言版本的红黑树，我将其做了C++封装，并基于此实现了Map作为用法演示。</p>
+<p>比较重要的定义如下。</p>
+<p>RBTreeNode: 红黑树节点<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> ValueType&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">RBTreeNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">using</span> Value_t = ValueType;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">enum</span> Color&#123;</span><br><span class="line">        RED = <span class="number">0</span>,</span><br><span class="line">        BLACK,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    RBTreeNode* m_parent = <span class="literal">nullptr</span>;</span><br><span class="line">    RBTreeNode* m_right = <span class="literal">nullptr</span>;</span><br><span class="line">    RBTreeNode* m_left = <span class="literal">nullptr</span>;</span><br><span class="line">    Color m_color = RED;</span><br><span class="line"></span><br><span class="line">    Value_t m_value;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure></p>
+<p>RBTree: 红黑树<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> NodeType</span><br><span class="line">, <span class="keyword">typename</span> CompareType&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RBTree</span> &#123;</span></span><br><span class="line">    DISALLOW_COPY_AND_ASSIGN(RBTree)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> Node_t = NodeType;</span><br><span class="line">    <span class="keyword">using</span> Compare_t = CompareType;</span><br><span class="line">    <span class="keyword">using</span> Value_t = <span class="keyword">typename</span> Node_t::Value_t;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    Node_t* m_root;</span><br><span class="line">    <span class="keyword">int</span> m_size;</span><br><span class="line">    Compare_t m_compare;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure></p>
+<p>Map：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> KeyType</span><br><span class="line">, <span class="keyword">typename</span> ValueType</span><br><span class="line">, <span class="keyword">typename</span> CompareType</span><br><span class="line">, <span class="keyword">typename</span> AllocatorFamily = HeapAllocator&lt;&gt;</span><br><span class="line">&gt;</span><br><span class="line">class Map &#123;</span><br><span class="line">    DISALLOW_COPY_AND_ASSIGN(Map)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> Key_t = KeyType;</span><br><span class="line">    <span class="keyword">using</span> Value_t = ValueType;</span><br><span class="line">    <span class="keyword">using</span> Compare_t = CompareType;</span><br><span class="line">    <span class="keyword">using</span> Data_t = Pair&lt;Key_t, Value_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> DataCompare_t = PairCompare&lt;Data_t, Compare_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Node_t = RBTreeNode&lt;Data_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Tree_t = RBTree&lt;Node_t, DataCompare_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Allocator_t = <span class="keyword">typename</span> AllocatorFamily::<span class="keyword">template</span> Rebind&lt;<span class="keyword">sizeof</span>(Node_t)&gt;;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>完整代码放在了<a href="https://github.com/KaleoFeng/RBTreeAndMap" target="_blank" rel="noopener">Github</a>上。</p>
 
           
         
@@ -448,7 +433,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/35/">35</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -491,7 +476,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">34</span>
+                    <span class="site-state-item-count">35</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -649,7 +634,19 @@
                     
                       
                     
-                    <span class="site-state-item-count">62</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">68</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

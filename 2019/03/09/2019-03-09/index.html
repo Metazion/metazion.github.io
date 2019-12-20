@@ -103,14 +103,14 @@
 
 
   <meta name="description" content="Java的 synchronized 关键字是实现线程同步的一个非常重要的方式，其实现原理和优化也是一个重点。本文不会对相关概念流程一一详解，而是着重讲解其中的关键点和可能的理解误区。 首先，重中之重，请牢记以下三点：  偏向锁适用于期望只有一个线程执行的场景  轻量级锁适用于多个线程交替执行的场景  重量级锁适用于多个线程同时执行的场景   掌握 synchronized 实现的过程中，可以先假">
-<meta name="keywords" content="并发编程,多线程,Java,锁,synchronized,偏向锁,轻量级锁,重量级锁">
+<meta name="keywords" content="Java,并发编程,多线程,锁,synchronized,偏向锁,轻量级锁,重量级锁">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java synchronized实现原理与优化：偏向锁、轻量级锁和重量级锁">
 <meta property="og:url" content="https://qilu.me/2019/03/09/2019-03-09/index.html">
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="Java的 synchronized 关键字是实现线程同步的一个非常重要的方式，其实现原理和优化也是一个重点。本文不会对相关概念流程一一详解，而是着重讲解其中的关键点和可能的理解误区。 首先，重中之重，请牢记以下三点：  偏向锁适用于期望只有一个线程执行的场景  轻量级锁适用于多个线程交替执行的场景  重量级锁适用于多个线程同时执行的场景   掌握 synchronized 实现的过程中，可以先假">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-04-03T12:13:25.712Z">
+<meta property="og:updated_time" content="2019-12-09T15:18:14.781Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java synchronized实现原理与优化：偏向锁、轻量级锁和重量级锁">
 <meta name="twitter:description" content="Java的 synchronized 关键字是实现线程同步的一个非常重要的方式，其实现原理和优化也是一个重点。本文不会对相关概念流程一一详解，而是着重讲解其中的关键点和可能的理解误区。 首先，重中之重，请牢记以下三点：  偏向锁适用于期望只有一个线程执行的场景  轻量级锁适用于多个线程交替执行的场景  重量级锁适用于多个线程同时执行的场景   掌握 synchronized 实现的过程中，可以先假">
@@ -445,11 +445,11 @@
       
         <div class="post-tags">
           
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
             <a href="/tags/并发编程/" rel="tag"># 并发编程</a>
           
             <a href="/tags/多线程/" rel="tag"># 多线程</a>
-          
-            <a href="/tags/Java/" rel="tag"># Java</a>
           
             <a href="/tags/锁/" rel="tag"># 锁</a>
           
@@ -558,7 +558,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">34</span>
+                    <span class="site-state-item-count">35</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -716,7 +716,19 @@
                     
                       
                     
-                    <span class="site-state-item-count">62</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">68</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
