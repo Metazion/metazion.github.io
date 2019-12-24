@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2019/03/16/2019-03-16/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2019/08/08/2019-08-08/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/03/16/2019-03-16/" itemprop="url">
-                  并发编程概述：内存屏障、volatile、原子变量和互斥锁
+                <a class="post-title-link" href="/2019/08/08/2019-08-08/" itemprop="url">
+                  HotSpot JVM源码分析（1）：由movl看如何从字节码生成机器码
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2019-03-16 13:00:00" itemprop="dateCreated datePublished" datetime="2019-03-16T13:00:00+08:00">2019-03-16</time>
+              <time title="创建时间：2019-08-08 20:00:00" itemprop="dateCreated datePublished" datetime="2019-08-08T20:00:00+08:00">2019-08-08</time>
             
 
             
@@ -383,39 +383,84 @@
       
         
           
-            <p>本文论述基于常规概念，不面向具体平台架构。</p>
-<p>并发编程三条特性：</p>
-<ul>
-<li><p>原子性<br>原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。</p>
-</li>
-<li><p>可见性<br>可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。</p>
-</li>
-<li><p>有序性<br>有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。</p>
-</li>
-</ul>
-<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
-<p><img src="/2019/03/16/2019-03-16/architecture.png" alt="architecture"></p>
-<h4 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h4><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
-<h4 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h4><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
-<h4 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h4><p>内存。</p>
-<p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
-<p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
-<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
-<p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
-<p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
-<h5 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h5><p>针对InvalidateQueue，确保其被处理。</p>
-<p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
-<p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
-<h4 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h4><p>针对StoreBuffer，确保其写入缓存。</p>
-<p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
-<p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
-<p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
-<h2 id="valatile、原子变量和锁"><a href="#valatile、原子变量和锁" class="headerlink" title="valatile、原子变量和锁"></a>valatile、原子变量和锁</h2><p>明白了以上知识，相关概念就很好理解了。</p>
-<h4 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h4><p>volatile读：在该操作前添加LoadLoad屏障，在该操作后添加LoadStore屏障。</p>
-<p>volatile写：在该操作前添加StoreStore屏障，在该操作后添加StoreLoad屏障。</p>
-<p>所以volatile可以具有可见性和有序性，但不具有原子性</p>
-<h4 id="原子变量"><a href="#原子变量" class="headerlink" title="原子变量"></a>原子变量</h4><p>原子变量在实现上，可以采用CAS操作，所以具有原子性。</p>
-<h4 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h4><p>互斥锁在实现上，保证了一个同步块同一时间只能有一个线程进入，所以具有原子性，其又包含内存屏障语义，所以具有可见性和有序性。</p>
+            <p>本系列文章基于 <strong>OpenJDK 9</strong>，聚焦 <strong>x86</strong> 平台。</p>
+<p>本文以 <code>movl</code> 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>类似 <strong>invoke_virtual</strong> 的字节码指令，在 <strong>解析</strong> 阶段将 <strong>符号引用</strong> 解析成 <strong>直接引用</strong> 后，解析结果会放在 <strong>常量池缓存</strong>（<strong>ConstantPoolCache</strong>），后续调用直接使用缓存条目，而不用再次解析。</p>
+<p>常量池缓存结构如下（<em>openjdk\hotspot\src\share\vm\oops\cpCache.cpp</em>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">class ConstantPoolCache: public MetaspaceObj &#123;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">VMStructs</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">MetadataFactory</span></span>;</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">int</span>             _length;</span><br><span class="line">  ConstantPool*   _constant_pool;          <span class="comment">// the corresponding constant pool</span></span><br></pre></td></tr></table></figure>
+<p>这是常量池缓存字段，紧跟其后的是 <strong>常量池缓存条目</strong> （<strong>ConstantPoolCacheEntry</strong>）数组，<code>_length</code> 即数组的大小。</p>
+<p>常量池缓存条目结构如下（<em>openjdk\hotspot\src\share\vm\oops\cpCache.cpp</em>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConstantPoolCacheEntry</span> <span class="title">VALUE_OBJ_CLASS_SPEC</span> </span>&#123;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">VMStructs</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">constantPoolCacheKlass</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">ConstantPool</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">InterpreterRuntime</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">volatile</span> intx     _indices;  <span class="comment">// constant pool index &amp; rewrite bytecodes</span></span><br><span class="line">  <span class="keyword">volatile</span> Metadata*   _f1;       <span class="comment">// entry specific metadata field</span></span><br><span class="line">  <span class="keyword">volatile</span> intx        _f2;       <span class="comment">// entry specific int/metadata field</span></span><br><span class="line">  <span class="keyword">volatile</span> intx     _flags;    <span class="comment">// flags</span></span><br></pre></td></tr></table></figure>
+<p>其有 <em>4</em> 个字段，具体意义我们在后面文章中再解释，本文关注 <code>_indices</code> 字段，该字段中包含字节码指令等信息：</p>
+<blockquote>
+<p>// _indices = invoke code for f1 (b1 section), invoke code for f2 (b2 section), original constant pool index</p>
+</blockquote>
+<p>现在看一段源码（<em>openjdk\hotspot\src\cpu\x86\vm\interp_masm_x86.cpp</em>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> InterpreterMacroAssembler::get_cache_and_index_and_bytecode_at_bcp(Register cache,</span><br><span class="line">                                                                        Register index,</span><br><span class="line">                                                                        Register bytecode,</span><br><span class="line">                                                                        <span class="keyword">int</span> byte_no,</span><br><span class="line">                                                                        <span class="keyword">int</span> bcp_offset,</span><br><span class="line">                                                                        size_t index_size) &#123;</span><br><span class="line">  get_cache_and_index_at_bcp(cache, index, bcp_offset, index_size);</span><br><span class="line">  <span class="comment">// We use a 32-bit load here since the layout of 64-bit words on</span></span><br><span class="line">  <span class="comment">// little-endian machines allow us that.</span></span><br><span class="line">  movl(bytecode, Address(cache, index, Address::times_ptr, ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()));</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> shift_count = (<span class="number">1</span> + byte_no) * BitsPerByte;</span><br><span class="line">  <span class="keyword">assert</span>((byte_no == TemplateTable::f1_byte &amp;&amp; shift_count == ConstantPoolCacheEntry::bytecode_1_shift) ||</span><br><span class="line">         (byte_no == TemplateTable::f2_byte &amp;&amp; shift_count == ConstantPoolCacheEntry::bytecode_2_shift),</span><br><span class="line">         <span class="string">"correct shift count"</span>);</span><br><span class="line">  shrl(bytecode, shift_count);</span><br><span class="line">  <span class="keyword">assert</span>(ConstantPoolCacheEntry::bytecode_1_mask == ConstantPoolCacheEntry::bytecode_2_mask, <span class="string">"common mask"</span>);</span><br><span class="line">  andl(bytecode, ConstantPoolCacheEntry::bytecode_1_mask);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码由解释器调用，用来生成 “获取 <strong>常量池缓存条目</strong>” 的机器码。</p>
+<p>这里一定要区分好 <strong>解释器</strong> 和 <strong>运行时</strong> 两种环境，代码由 <strong>解释器</strong> 调用，作用是生成供 <strong>运行时</strong> 调用的机器码。</p>
+<p>寄存器 <code>cache</code>, <code>index</code>, <code>bytecode</code> 分别用来存放 <strong>常量池缓存</strong> 首地址，<strong>常量池缓存条目</strong> 的数组索引和 字节码指令。</p>
+<p>首先调用 <code>get_cache_and_index_at_bcp</code> 方法获取 <code>cache</code> 和 <code>index</code>。</p>
+<p>之后下面这行代码就用来获取 <strong>常量池缓存条目</strong> 的 <code>_indices</code> 字段数据，将其放在 <code>bytecode</code> 寄存器。再次强调，不是 <strong>解释器</strong> 执行时如此，而是生成的机器码在 <strong>运行时</strong> 如此。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">movl(bytecode, Address(cache, index, Address::times_ptr, ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()))</span><br></pre></td></tr></table></figure>
+<h2 id="正题"><a href="#正题" class="headerlink" title="正题"></a>正题</h2><p>看一下 <code>movl</code> 的源码（<strong>openjdk\hotspot\src\cpu\x86\vm\assembler_x86.cpp</strong>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Assembler::movl(Register dst, Address src) &#123;</span><br><span class="line">  <span class="function">InstructionMark <span class="title">im</span><span class="params">(<span class="keyword">this</span>)</span></span>;</span><br><span class="line">  prefix(src, dst);</span><br><span class="line">  emit_int8((unsigned <span class="keyword">char</span>)<span class="number">0x8B</span>);</span><br><span class="line">  emit_operand(dst, src);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第 <em>2</em> 行生成指令前缀，第 <em>3</em> 行生成单字节指令，第 <em>4</em> 行生成操作数；无视指令前缀，我们只关注指令和操作数。</p>
+<p>这里展开，就牵扯到 <strong>Intel</strong> <strong>x86指令集</strong> 的内容了。</p>
+<p>先看指令格式图：</p>
+<p><img src="/2019/08/08/2019-08-08/general_instruction_format.jpg" alt="general_instruction_format"></p>
+<p>上面是指令格式，下面是两个操作数的位含义。</p>
+<p>继续看 <code>movl</code> 源码。</p>
+<p>参数类型 <code>Register</code> 是寄存器，<code>Address</code> 顾名思义是地址，结构如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Address</span> <span class="title">VALUE_OBJ_CLASS_SPEC</span> </span>&#123;</span><br><span class="line"> ...</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  Register         _base;</span><br><span class="line">  Register         _index;</span><br><span class="line">  ScaleFactor      _scale;</span><br><span class="line">  <span class="keyword">int</span>              _disp;</span><br><span class="line">  RelocationHolder _rspec;</span><br></pre></td></tr></table></figure>
+<p>封装了不同寻址模式所需的参数，对照一下上面指令集格式图，各个字段的意义就很清楚了，下面我们还是详细说一下。</p>
+<p><code>movl</code> 第3行 <code>emit_int8((unsigned char)0x8B)</code> 写入的 <code>opcode</code> 是 <em>0x8B</em> ，对应 <code>mov</code> 指令，参考下图：</p>
+<p><img src="/2019/08/08/2019-08-08/mov.jpg" alt="mov"></p>
+<p>32位模式下，其格式是这样的：</p>
+<blockquote>
+<p>8B /r MOV r32,r/m32 Move r/m32 to r32</p>
+</blockquote>
+<p>该指令有两个操作数，第 <em>1</em> 个操作数是目的寄存器，第 <em>2</em> 个操作数是源寄存器或地址，指令作用是将源寄存器或地址的数据写到目的寄存器。</p>
+<p><code>movl</code> 第 <em>4</em> 行 <code>emit_operand(dst, src)</code> 即生成两个操作数。</p>
+<p>源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Assembler::emit_operand(Register reg, Address adr,</span><br><span class="line">                             <span class="keyword">int</span> rip_relative_correction) &#123;</span><br><span class="line">  emit_operand(reg, adr._base, adr._index, adr._scale, adr._disp,</span><br><span class="line">               adr._rspec,</span><br><span class="line">               rip_relative_correction);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>又调用了另外一个 <code>emit_operand</code>, 并把 <code>Address</code> 封装的字段作用参数传递过去。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Assembler::emit_operand(Register reg, Register base, Register index,</span><br><span class="line">                             Address::ScaleFactor scale, <span class="keyword">int</span> disp,</span><br><span class="line">                             RelocationHolder <span class="keyword">const</span>&amp; rspec,</span><br><span class="line">                             <span class="keyword">int</span> rip_relative_correction) &#123;</span><br><span class="line">  relocInfo::relocType rtype = (relocInfo::relocType) rspec.type();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Encode the registers as needed in the fields they are used in</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> regenc = encode(reg) &lt;&lt; <span class="number">3</span>;</span><br><span class="line">  <span class="keyword">int</span> indexenc = index-&gt;is_valid() ? encode(index) &lt;&lt; <span class="number">3</span> : <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">int</span> baseenc = base-&gt;is_valid() ? encode(base) : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (base-&gt;is_valid()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (index-&gt;is_valid()) &#123;</span><br><span class="line">      <span class="keyword">assert</span>(scale != Address::no_scale, <span class="string">"inconsistent address"</span>);</span><br><span class="line">      <span class="comment">// [base + index*scale + disp]</span></span><br><span class="line">      <span class="keyword">if</span> (disp == <span class="number">0</span> &amp;&amp; rtype == relocInfo::none  &amp;&amp;</span><br><span class="line">          base != <span class="function">rbp <span class="title">LP64_ONLY</span><span class="params">(&amp;&amp; base != r13)</span>) </span>&#123;</span><br><span class="line">        <span class="comment">// [base + index*scale]</span></span><br><span class="line">        <span class="comment">// [00 reg 100][ss index base]</span></span><br><span class="line">        <span class="keyword">assert</span>(index != rsp, <span class="string">"illegal addressing mode"</span>);</span><br><span class="line">        emit_int8(<span class="number">0x04</span> | regenc);</span><br><span class="line">        emit_int8(scale &lt;&lt; <span class="number">6</span> | indexenc | baseenc);</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (emit_compressed_disp_byte(disp) &amp;&amp; rtype == relocInfo::none) &#123;</span><br><span class="line">        <span class="comment">// [base + index*scale + imm8]</span></span><br><span class="line">        <span class="comment">// [01 reg 100][ss index base] imm8</span></span><br><span class="line">        <span class="keyword">assert</span>(index != rsp, <span class="string">"illegal addressing mode"</span>);</span><br><span class="line">        emit_int8(<span class="number">0x44</span> | regenc);</span><br><span class="line">        emit_int8(scale &lt;&lt; <span class="number">6</span> | indexenc | baseenc);</span><br><span class="line">        emit_int8(disp &amp; <span class="number">0xFF</span>);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// [base + index*scale + disp32]</span></span><br><span class="line">        <span class="comment">// [10 reg 100][ss index base] disp32</span></span><br><span class="line">        <span class="keyword">assert</span>(index != rsp, <span class="string">"illegal addressing mode"</span>);</span><br><span class="line">        emit_int8(<span class="number">0x84</span> | regenc);</span><br><span class="line">        emit_int8(scale &lt;&lt; <span class="number">6</span> | indexenc | baseenc);</span><br><span class="line">        emit_data(disp, rspec, disp32_operand);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (base == <span class="function">rsp <span class="title">LP64_ONLY</span><span class="params">(|| base == r12)</span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>代码很长，这里只截取了我们这次涉及到的部分。</p>
+<p>结合前面源码，因为 <em>4</em> 个重要参数 <code>cache</code>， <code>index</code>， <code>scale</code>， <code>disp</code> 都有值，<code>disp</code> 是 <strong>常量池缓存</strong> 的size + <strong>常量池缓存条目</strong> 字段 <code>_indices</code> 的偏移， 逻辑会走到 <code>else if</code> 块。</p>
+<p>单摘出来：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// [base + index*scale + imm8]</span></span><br><span class="line"><span class="comment">// [01 reg 100][ss index base] imm8</span></span><br><span class="line"><span class="keyword">assert</span>(index != rsp, <span class="string">"illegal addressing mode"</span>);</span><br><span class="line">emit_int8(<span class="number">0x44</span> | regenc);</span><br><span class="line">emit_int8(scale &lt;&lt; <span class="number">6</span> | indexenc | baseenc);</span><br><span class="line">emit_int8(disp &amp; <span class="number">0xFF</span>);</span><br></pre></td></tr></table></figure>
+<p>注释已经把操作数位意义和寻址方式都描述出来了，下面解释一下为什么是这样的。</p>
+<p>先看第 <em>1</em> 个操作数，为 <code>0x44 | regenc</code>。</p>
+<blockquote>
+<p>回头看一下x86指令集指令格式图，可知，第一个操作数为 <strong>ModR/M</strong> 字节，其形式如下：</p>
+<p><img src="/2019/08/08/2019-08-08/modrm_32.jpg" alt="modrm_32"></p>
+<p><em>0x44</em> 二进制形式为 <em>01 000 100</em>，高 <em>2</em> 位 <em>01</em> 是 <strong>Mod</strong>，中 <em>3</em> 位 <em>000</em> 是 <strong>Reg/Opcode</strong>，低 <em>3</em> 位 <em>100</em> 是 <strong>R/M</strong>。</p>
+<p>图最上面那一栏，中3位 <em>000</em> 或 上 <code>regenc</code> 就等于 <code>regenc</code>，也就是根据 <code>regenc</code> 的值选择对应 <strong>目的寄存器</strong>。</p>
+<p>高 <em>2</em> 位 <strong>Mod</strong> 是 <em>01</em>，查上表可知，所在栏均为 <strong>disp8</strong> ，低 <em>3</em> 位 <strong>R/M</strong> 是 <em>100</em>，查上表可知，对应 <strong>disp8[–][–]</strong>。看NOTES，<strong>[–][–]</strong> 表示后续跟着一个 <strong>SIB</strong>，即第 <em>2</em> 个操作数是 <strong>SIB</strong>；<strong>disp8</strong> 表示有第 <em>3</em> 个1个字节的操作数，表示偏移。</p>
+<p>整体寻址模式为 <code>BASE + INDEX * SCALE + DISP</code>。</p>
+</blockquote>
+<p>再看第 <em>2</em> 个操作数，为 <code>scale &lt;&lt; 6 | indexenc | baseenc</code>。</p>
+<blockquote>
+<p>由第 <em>1</em> 个操作数得知，第 <em>2</em> 个操作数是 <strong>SIB</strong> 字节，其形式如下：</p>
+<p><img src="/2019/08/08/2019-08-08/sib_32.jpg" alt="sib_32"></p>
+<p>图最上面那一栏，根据 <code>baseenc</code> 的值选择 <strong>base寄存器</strong>。</p>
+<p>前面传入的 <code>scale</code> 参数为 <code>Address::times_ptr</code>，值为 <em>3</em>，二进制为 <em>11</em> ，对应上表 <strong>SS</strong>，即最后一栏。<code>index</code> 意为选择哪个 <strong>index寄存器</strong> 及操作，结果就是 <code>index * 8</code>。</p>
+</blockquote>
+<p>再看第 <em>3</em> 个参数，为 <code>disp &amp; 0xFF</code>。</p>
+<blockquote>
+<p>由第 <em>1</em> 个操作数得知，第 <em>3</em> 个操作数是 <strong>disp</strong>。</p>
+</blockquote>
+<p>综上，<code>emit</code> <em>3</em> 个操作数后，机器码最终为 <code>0x8B [01 reg 100] [11 index base] [disp]</code>，表示为 <code>mov reg [base + index * 8 + disp]</code>，意义是从地址 <code>[base + index * 8 + disp]</code> 取出数值，放到 <code>reg</code> 寄存器，即将 <strong>常量池缓存</strong> 中的 <strong>常量池缓存条目</strong> 数组中索引<code>index</code> 处的缓存条目 <code>_indices</code> 字段的值拷贝到 <code>bytecode</code> 寄存器。</p>
+<h2 id="话外"><a href="#话外" class="headerlink" title="话外"></a>话外</h2><p>回到我们最初的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">movl(bytecode, Address(cache, index, Address::times_ptr, ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()))</span><br></pre></td></tr></table></figure>
+<p><code>Address</code> 的构造参数 <code>cache</code> 是常量池缓存首地址，对应 <code>base</code>；<code>index</code> 是常量池缓存条目数组索引，对应 <code>index</code>； <code>ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()</code> 是 <strong>常量池缓存</strong> 头部大小 + <strong>常量池缓存条目</strong> 字段 <code>_indices</code> 的偏移，对应 <code>disp</code>。</p>
+<p>按照我们上面的公式，任意 <code>index</code> 缓存条目字段 <code>indices</code> 的地址为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base + index * <span class="number">8</span> + ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()</span><br></pre></td></tr></table></figure>
+<p>再看下前面 <strong>ConstantPoolCacheEntry</strong> 的结构定义，肯定会觉得不对呀，一个缓存条目有 <em>4</em> 个字段，大小为 <em>32</em>，怎么这里才 <code>* 8</code>？ 应该 <code>* 32</code> 才对。</p>
+<p>其实，此 <code>index</code> 已非彼 <code>index</code>，原因就在 <code>get_cache_and_index_at_bcp</code> 方法里：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> InterpreterMacroAssembler::get_cache_and_index_at_bcp(Register cache,</span><br><span class="line">                                                           Register index,</span><br><span class="line">                                                           <span class="keyword">int</span> bcp_offset,</span><br><span class="line">                                                           size_t index_size) &#123;</span><br><span class="line">  assert_different_registers(cache, index);</span><br><span class="line">  get_cache_index_at_bcp(index, bcp_offset, index_size);</span><br><span class="line">  movptr(cache, Address(rbp, frame::interpreter_frame_cache_offset * wordSize));</span><br><span class="line">  <span class="keyword">assert</span>(sizeof(ConstantPoolCacheEntry) == <span class="number">4</span> * wordSize, <span class="string">"adjust code below"</span>);</span><br><span class="line">  <span class="comment">// convert from field index to ConstantPoolCacheEntry index</span></span><br><span class="line">  <span class="keyword">assert</span>(exact_log2(in_words(ConstantPoolCacheEntry::size())) == <span class="number">2</span>, <span class="string">"else change next line"</span>);</span><br><span class="line">  shll(index, <span class="number">2</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，调用 <code>get_cache_index_at_bcp</code> 获取到 <code>index</code>，此时确实是缓存条目数组索引，但后面因为缓存条目大小为 <code>4 * wordSize</code>，<code>wordSize</code> 等同一个指针size，等同我们公式里的 <em>8</em>，所以执行了 <code>shll(index, 2)</code>，左移 <em>2</em> 位即 <code>* 4</code>，此后 <code>index</code> 已经等于 <code>缓存条目数组索引 * 4</code> 了。</p>
 
           
         
@@ -458,7 +503,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/35/">35</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -501,7 +546,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">35</span>
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -671,7 +716,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">68</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">70</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

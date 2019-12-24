@@ -111,7 +111,7 @@
 <meta property="og:description" content="本文论述基于常规概念，不面向具体平台架构。 并发编程三条特性：  原子性原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。  可见性可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。  有序性有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。   系统架构首先展示一幅手绘图，概略描述单核和多核时的系统架构：  Register">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2019/03/16/2019-03-16/architecture.png">
-<meta property="og:updated_time" content="2019-10-15T15:03:31.714Z">
+<meta property="og:updated_time" content="2019-12-23T13:24:45.380Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="并发编程概述：内存屏障、volatile、原子变量和互斥锁">
 <meta name="twitter:description" content="本文论述基于常规概念，不面向具体平台架构。 并发编程三条特性：  原子性原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。  可见性可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。  有序性有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。   系统架构首先展示一幅手绘图，概略描述单核和多核时的系统架构：  Register">
@@ -394,27 +394,27 @@
 </ul>
 <h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
 <p><img src="/2019/03/16/2019-03-16/architecture.png" alt="architecture"></p>
-<h4 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h4><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
-<h4 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h4><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
-<h4 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h4><p>内存。</p>
+<h3 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h3><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
+<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
+<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>内存。</p>
 <p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
 <p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
 <h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
 <p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
 <p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
-<h5 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h5><p>针对InvalidateQueue，确保其被处理。</p>
+<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>针对InvalidateQueue，确保其被处理。</p>
 <p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
 <p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
-<h4 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h4><p>针对StoreBuffer，确保其写入缓存。</p>
+<h3 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h3><p>针对StoreBuffer，确保其写入缓存。</p>
 <p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
 <p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
 <p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
-<h2 id="valatile、原子变量和锁"><a href="#valatile、原子变量和锁" class="headerlink" title="valatile、原子变量和锁"></a>valatile、原子变量和锁</h2><p>明白了以上知识，相关概念就很好理解了。</p>
-<h4 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h4><p>volatile读：在该操作前添加LoadLoad屏障，在该操作后添加LoadStore屏障。</p>
+<h2 id="volatile、原子变量和锁"><a href="#volatile、原子变量和锁" class="headerlink" title="volatile、原子变量和锁"></a>volatile、原子变量和锁</h2><p>明白了以上知识，相关概念就很好理解了。</p>
+<h3 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h3><p>volatile读：在该操作前添加LoadLoad屏障，在该操作后添加LoadStore屏障。</p>
 <p>volatile写：在该操作前添加StoreStore屏障，在该操作后添加StoreLoad屏障。</p>
 <p>所以volatile可以具有可见性和有序性，但不具有原子性</p>
-<h4 id="原子变量"><a href="#原子变量" class="headerlink" title="原子变量"></a>原子变量</h4><p>原子变量在实现上，可以采用CAS操作，所以具有原子性。</p>
-<h4 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h4><p>互斥锁在实现上，保证了一个同步块同一时间只能有一个线程进入，所以具有原子性，其又包含内存屏障语义，所以具有可见性和有序性。</p>
+<h3 id="原子变量"><a href="#原子变量" class="headerlink" title="原子变量"></a>原子变量</h3><p>原子变量在实现上，可以采用CAS操作，所以具有原子性。</p>
+<h3 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h3><p>互斥锁在实现上，保证了一个同步块同一时间只能有一个线程进入，所以具有原子性，其又包含内存屏障语义，所以具有可见性和有序性。</p>
 
       
     </div>
@@ -552,7 +552,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">35</span>
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -722,7 +722,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">68</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">70</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
@@ -758,7 +762,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统架构"><span class="nav-number">1.</span> <span class="nav-text">系统架构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Register"><span class="nav-number">1.0.1.</span> <span class="nav-text">Register</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Cache"><span class="nav-number">1.0.2.</span> <span class="nav-text">Cache</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memory"><span class="nav-number">1.0.3.</span> <span class="nav-text">Memory</span></a></li></ol></li></ol><li class="nav-item nav-level-2"><a class="nav-link" href="#内存屏障"><span class="nav-number">2.</span> <span class="nav-text">内存屏障</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#读屏障"><span class="nav-number">2.0.0.1.</span> <span class="nav-text">读屏障</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#写屏障"><span class="nav-number">2.0.1.</span> <span class="nav-text">写屏障</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#valatile、原子变量和锁"><span class="nav-number">3.</span> <span class="nav-text">valatile、原子变量和锁</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#volatile"><span class="nav-number">3.0.1.</span> <span class="nav-text">volatile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#原子变量"><span class="nav-number">3.0.2.</span> <span class="nav-text">原子变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#互斥锁"><span class="nav-number">3.0.3.</span> <span class="nav-text">互斥锁</span></a></li></ol></li></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统架构"><span class="nav-number">1.</span> <span class="nav-text">系统架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Register"><span class="nav-number">1.1.</span> <span class="nav-text">Register</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cache"><span class="nav-number">1.2.</span> <span class="nav-text">Cache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory"><span class="nav-number">1.3.</span> <span class="nav-text">Memory</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存屏障"><span class="nav-number">2.</span> <span class="nav-text">内存屏障</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#读屏障"><span class="nav-number">2.1.</span> <span class="nav-text">读屏障</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#写屏障"><span class="nav-number">2.2.</span> <span class="nav-text">写屏障</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile、原子变量和锁"><span class="nav-number">3.</span> <span class="nav-text">volatile、原子变量和锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#volatile"><span class="nav-number">3.1.</span> <span class="nav-text">volatile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原子变量"><span class="nav-number">3.2.</span> <span class="nav-text">原子变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#互斥锁"><span class="nav-number">3.3.</span> <span class="nav-text">互斥锁</span></a></li></ol></li></ol></div>
             
 
           </div>

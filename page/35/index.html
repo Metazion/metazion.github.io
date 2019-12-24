@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/05/01/2014-05-01/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/05/02/2014-05-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2014/05/01/2014-05-01/" itemprop="url">
-                  起舞弄清影
+                <a class="post-title-link" href="/2014/05/02/2014-05-02/" itemprop="url">
+                  搭建博客的一些事儿
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2014-05-01 13:00:00" itemprop="dateCreated datePublished" datetime="2014-05-01T13:00:00+08:00">2014-05-01</time>
+              <time title="创建时间：2014-05-02 17:00:00" itemprop="dateCreated datePublished" datetime="2014-05-02T17:00:00+08:00">2014-05-02</time>
             
 
             
@@ -347,7 +347,7 @@
                 <span class="post-meta-item-text">分类于</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Trifle/" itemprop="url" rel="index"><span itemprop="name">Trifle</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Interest/" itemprop="url" rel="index"><span itemprop="name">Interest</span></a></span>
 
                 
                 
@@ -383,9 +383,15 @@
       
         
           
-            <p>早前开过一个独立博客，但终究没坚持写下去。前几天才发现FarBox这么一个有趣的东西，兴致就来了。可能年龄渐长，愈来愈喜欢简单纯粹的东西，也更希望能分享自己的知识，记录经历。</p>
-<p>生命日复一日，心也渐渐蒙尘。好在不时会下一场雨，身边的一切焕然一新。Everything that has a beginning has an end.</p>
-<p>时间无限，而生命有限。虽逃脱不了定数，然生存之美好，正在其间。愿在接下来的日子里，尊崇自己，平和宁静，欣然而行。</p>
+            <p>五一放假，外面据说人山人海，也懒得出去。在家继续练习烹饪，编写代码，另外把想了些日子的独立博客搭了起来。</p>
+<p>之前建过一个博客，买了个主机空间，部署了Wordpress，开始还有兴致，后来就慢慢懒得写了，没能坚持下去。写东西比想东西要难，脑袋里千回百转，可要用语言描述出来，却很耗时间和考验功力。</p>
+<p>最近越来越希望跟人交流想法，分享自己的知识和经历，于是又生起了写博客的心思。不想再用之前的Wordpress，慢且繁冗，刚好发现了<a href="https://farbox.com" target="_blank" rel="noopener">Farbox</a>+<a href="https://dropbox.com" target="_blank" rel="noopener">Dropbox</a>方案，不需要折腾空间，采用Markdown，简单纯粹，正符合现在的喜好。</p>
+<p>搭建过程还是很简便的，网上有不少文章讲解，官网也有文档。</p>
+<p>我在<a href="https://godaddy.com" target="_blank" rel="noopener">Godaddy</a>上有两个域名，都是指向之前的那个博客，建了这个后，那个也就废弃了。大概是在大陆的原因，登Godaddy非常慢，管理起来很费劲。于是在Godaddy偶尔不抽风的时候，赶紧把域名的Nameserver都指向了国内的<a href="https://dnspod.cn" target="_blank" rel="noopener">Dnspod</a>，这样之后就可以在Dnspod上修改域名了。<br><img src="/2014/05/02/2014-05-02/godaddy_qilu_me.png" alt="Image Title"></p>
+<p>Dnspod上要做的，就是建立CName，指向这个博客的Farbox地址。<br><img src="/2014/05/02/2014-05-02/dnspod_qilu_me.png" alt="Image Title"></p>
+<p>域名修改后，生效需要一些时间。Dnspod服务器实时更新，但由于全球各地DNS服务器有缓存，短则几分钟，长则数小时才可用。要查看域名指向是否正确，可以用<strong>nslookup</strong>命令，Windows和Linux都支持。<br><img src="/2014/05/02/2014-05-02/nslookup_qilu_me.png" alt="Image Title"><br>上面的是查询的DNS服务器，我没有使用ISP默认的，而是使用了中华电信的168.95.192.1和168.95.192.2；下面是查询的结果，可以看到，域名<strong>qilu.me</strong>已经被正确解析成了<strong>metazion.farbox.com</strong>。</p>
+<p>Linux下还可以用<strong>dig</strong>命令，有更详细的解析过程。<br><img src="/2014/05/02/2014-05-02/dig_qilu_me.png" alt="Image Title"><br>从上到下依次是查询根域名服务器，查询.me顶级域名服务器，查询Godaddy指向的Dnspod的Nameserver，查到<strong>qilu.me</strong>的CName记录<strong>metazion.farbox.com</strong>。</p>
+<p>最后还有一件要做的事，就是在Farbox上绑定多域名，如本例可绑定<strong>qilu.me</strong>、<strong><a href="http://www.qilu.me" target="_blank" rel="noopener">www.qilu.me</a></strong>等，具体操作可以参考官方文档。</p>
 
           
         
@@ -428,7 +434,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/34/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><span class="page-number current">35</span>
+    <a class="extend prev" rel="prev" href="/page/34/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><span class="page-number current">35</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/36/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -471,7 +477,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">35</span>
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -641,7 +647,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">68</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">70</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

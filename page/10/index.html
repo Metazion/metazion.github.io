@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2016/01/30/2016-01-30/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2016/02/20/2016-02-20/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2016/01/30/2016-01-30/" itemprop="url">
-                  Java游戏服务器-Windows平台自动部署程序到Linux平台
+                <a class="post-title-link" href="/2016/02/20/2016-02-20/" itemprop="url">
+                  Java游戏服务器-时区问题
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2016-01-30 23:00:00" itemprop="dateCreated datePublished" datetime="2016-01-30T23:00:00+08:00">2016-01-30</time>
+              <time title="创建时间：2016-02-20 23:00:00" itemprop="dateCreated datePublished" datetime="2016-02-20T23:00:00+08:00">2016-02-20</time>
             
 
             
@@ -383,27 +383,20 @@
       
         
           
-            <p>最近游戏已经基本完成，开始小规模内测。目前开发环境是在Windows下，服务器使用阿里云CentOS，这就牵扯到如何方便部署程序(包括数据，下同)。</p>
-<p>最开始做法是Windows下export程序，然后使用FileZilla通过sftp上传到目标服务器。说起来好像并不复杂，而且部署并不频繁，起初还能接受，但慢慢不胜其烦。因为每次要部署Login/Game/Journal3类服务器，重复操作实在繁琐。本着能自动做就不手动做的原则，需要一种通过脚本自动部署的方式来解放双手。</p>
-<p>首先梳理一下需求：</p>
+            <p>游戏要推向海外多个市场时，不可避免地会遇到时区问题。</p>
+<p>比如对台湾地区的用户，服务器可以部署在AWS的东京区。AWS的服务器和数据库，默认都使用UTC（零时区）时间，而台湾使用GMT+8（东八区）。</p>
+<p>针对CentOS，可以使用<code>cat /etc/localtime</code>查看当前时区，输出如下：<br><img src="/2016/02/20/2016-02-20/timezone_centos.jpg" alt></p>
+<p>针对MySQL，可以使用<code>SHOW VARIABLES LIKE &quot;%time_zone%&quot;</code>查看当前时区，输出如下：<br><img src="/2016/02/20/2016-02-20/timezone_mysql.jpg" alt></p>
+<p>如果开发时不注意时区问题，正式上线后极可能会出现各种逻辑和显示上的时间的混乱。</p>
+<p>时区问题，全区全服和分区分服处理起来还不太一样，全区全服要面向所有时区的玩家，分区分服通常可以做到服务器和玩家所在时区一致。但根据个人经验，无论全区全服或分区分服，都应该保证服务器唯一时区，且全部以服务器时间为准，具体时间显示可由客户端时区决定。</p>
+<p>还是以上面台湾区服务器部署为例，有两种解决方案：</p>
 <ol>
-<li><p>自动导出程序</p>
-</li>
-<li><p>自动对程序打包压缩，上传到目标服务器</p>
-</li>
-<li><p>自动在目标服务器解压，拷贝更新</p>
-</li>
+<li>调整服务器和数据库时区为GMT+8。这最简单，逻辑上也不容易出错。但有时同一个服务器和数据库可能会部署多个服务器服务多个不同地区的玩家，全局的时区改变并不合适，也增加了部署成本。</li>
+<li>保持服务器和数据库时区为UTC，程序里改变时区。具体服务器采用那个时区，可通过配置文件决定，服务器启动时设置目标时区。</li>
 </ol>
-<p>1、3是相关平台下的操作，有多种实现方式，我们主要看2需求，这是实际部署中最繁琐的地方。</p>
-<p>要对程序进行压缩，并且在Linux下解压，第一反应就是使用tar命令。要上传文件到服务器，第一反应是使用sftp命令。然而在Windows下默认没有这两个命令，幸运的是，已经有第三方实现。</p>
-<blockquote>
-<p><a href="https://github.com/bmatzelle/gow/releases" target="_blank" rel="noopener"> Gow (Gnu On Windows)</a> is the lightweight alternative to Cygwin. It uses a convenient Windows installer that installs about 130 extremely useful open source UNIX applications compiled as native win32 binaries. It is designed to be as small as possible, about 10 MB, as opposed to Cygwin which can run well over 100 MB depending upon options.</p>
-</blockquote>
-<p>有了tar和sftp等仿Linux命令，脚本就很容易实现了，示例如下。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tar -zcf Test.tar.gz Test</span><br><span class="line">md5sum Test.tar.gz</span><br><span class="line">psftp root@123.45.67.89 -pw 123456 -b psftp.txt</span><br><span class="line">rm -rf Test.tar.gz</span><br></pre></td></tr></table></figure></p>
-<p>首先对程序目录打包，其次计算md5，再通过sftp上传到Linux服务器，最后清理压缩文件。</p>
-<p>上传命令在psftp.txt中，如下。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/test/</span><br><span class="line">lcd E:/Test/</span><br><span class="line">put Test.tar.gz</span><br><span class="line">!md5sum Test.tar.gz</span><br><span class="line">exit</span><br></pre></td></tr></table></figure></p>
-<p>即将Windows的E:/Test/下的Test.tar.gz上传到目标Linux服务器的/home/test/目录下，并计算md5。</p>
-<p>另外，查看了一些资料，目前还没找到2、3都能通过Windows上的一个脚本完成的方法，只能分开进行。</p>
+<p>通过实践，方案2更优。对于Java程序，可以这样设置时区：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TimeZone.setDefault(TimeZone.getTimeZone(<span class="string">"GMT+8"</span>));</span><br></pre></td></tr></table></figure></p>
+<p>这种方案下，程序和数据库的所有数据上的时间都应该使用通常的毫秒值，而不应该使用Timestamp/DateTime等类型，因为后者都是时区相关的。同时逻辑上跟日期时间相关的，比如零点刷新等，都应该使用Calendar来获取，这样时区相关才能做到现实合理。即做到服务器使用唯一时区，客户端遵循本地时区，数据上时区无关，逻辑上时区相关。</p>
+<p>以上解决方式更适用于分区分服，服务器仅服务于一个时区的情况。而全区全服，服务器要服务于多个时区的情况下，如何保证体验，还在探索。</p>
 
           
         
@@ -446,7 +439,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/35/">35</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -489,7 +482,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">35</span>
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -659,7 +652,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">68</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">70</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
