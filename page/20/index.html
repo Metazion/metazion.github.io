@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/02/03/2015-02-03/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/03/14/2015-03-14/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2015/02/03/2015-02-03/" itemprop="url">
-                  MySQL InnoDB存储引擎要点
+                <a class="post-title-link" href="/2015/03/14/2015-03-14/" itemprop="url">
+                  动态链接库函数重定位与延迟绑定
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2015-02-03 18:00:00" itemprop="dateCreated datePublished" datetime="2015-02-03T18:00:00+08:00">2015-02-03</time>
+              <time title="创建时间：2015-03-14 22:00:00" itemprop="dateCreated datePublished" datetime="2015-03-14T22:00:00+08:00">2015-03-14</time>
             
 
             
@@ -383,202 +383,22 @@
       
         
           
-            <p>支持功能:</p>
-<ul>
-<li><p>行级锁</p>
-<ul>
-<li><p>四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁</p>
-</li>
-<li><p>普通select不加锁，insert、update、delete加排他锁</p>
-</li>
-<li><p>三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）</p>
-</li>
-<li><p>锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题</p>
-</li>
-</ul>
-</li>
-<li><p>事务</p>
-<ul>
-<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过锁实现，原子性、一致性、持久性通过redo和undo实现</p>
-</li>
-<li><p>通过redo Log（重做日志）和undo Log（撤消日志）保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>存储结构：</p>
-<ul>
-<li><p>表空间（tablespace）</p>
-<ul>
-<li><p>共享表空间，存储undo信息、插入缓冲索引也、系统事务信息、两次写缓冲等</p>
-</li>
-<li><p>单独表空间（可选），存储数据、索引和插入缓冲Bitmap页</p>
-</li>
-<li><p>索引组织的，数据即索引，索引即数据，B+树结构</p>
-</li>
-</ul>
-</li>
-<li><p>段（segment）</p>
-<ul>
-<li><p>数据段</p>
-</li>
-<li><p>索引段</p>
-</li>
-<li><p>undo段</p>
-</li>
-</ul>
-</li>
-<li><p>区（extent）</p>
-</li>
-<li><p>页（page）</p>
-<ul>
-<li><p>数据页（B+tree Node）</p>
-</li>
-<li><p>undo页</p>
-</li>
-<li><p>系统页</p>
-</li>
-<li><p>事务数据页</p>
-</li>
-<li><p>插入缓冲位图页</p>
-</li>
-<li><p>插入缓冲空闲列表页</p>
-</li>
-<li><p>未压缩的二进制大对象页</p>
-</li>
-<li><p>压缩的二进制大对象页</p>
-</li>
-</ul>
-</li>
-<li><p>行（row）</p>
-<ul>
-<li>三个隐藏字段：隐藏的ID（可能）、6字节的事务ID（DB_TRX_ID）、 7字节的回滚指针（DB_ROLL_PTR）</li>
-</ul>
-</li>
-<li><p>实现上每个页对应一个B+tree Node，页大小和行大小决定了每个节点记录数</p>
-</li>
-<li><p>默认每个段4个区，每区64个页，每页16K，每个页最少存储2行记录，即每行不超过8K，超出则行外存储至二进制大对象页</p>
-</li>
-<li><p>不考虑每页页头等数据，简化计算，非叶子节点每个条目至少包含一个8字节key和6字节指向子节点的指针，则每个非叶子节点最大可以有16K/14个条目；假设每条数据记录大小为1K，每个叶子节点页面可以存储16K/1K=16行数据记录；一个三层B+数最大可以存储(16K/14) <em> (16K/14) </em> (16K/1k) = 2191万行数据记录</p>
-</li>
-</ul>
-<p>缓冲池：</p>
-<ul>
-<li><p>普通缓冲池</p>
-<ul>
-<li><p>数据页</p>
-</li>
-<li><p>索引页</p>
-</li>
-<li><p>插入缓冲，辅助索引插入优化</p>
-</li>
-<li><p>自适应哈希索引，索引效率优化</p>
-</li>
-<li><p>锁信息</p>
-</li>
-<li><p>数据字典信息</p>
-</li>
-</ul>
-</li>
-<li><p>重做日志缓冲池</p>
-</li>
-<li><p>额外缓冲池</p>
-<ul>
-<li>缓冲池的数据结构本身、帧缓冲、缓冲控制对象等</li>
-</ul>
-</li>
-<li><p>两次写，LRU</p>
-</li>
-</ul>
-<p>索引 ：</p>
-<ul>
-<li><p>聚集索引</p>
-<ul>
-<li>key为索引值，value为行数据</li>
-</ul>
-</li>
-<li><p>辅助索引</p>
-<ul>
-<li>key为索引值，value为聚集索引键</li>
-</ul>
-</li>
-<li><p>采用B+树，非叶节点无数据，2到3层高度，减少磁盘IO次数</p>
-</li>
-</ul>
-<p>线程：</p>
-<ul>
-<li><p>Master Thread</p>
-<ul>
-<li>合并插入缓冲、脏页刷新（已单独）、undo页回收（已单独）等</li>
-</ul>
-</li>
-<li><p>IO Thread</p>
-<ul>
-<li>读（页）线程、写（页）线程、插入缓冲线程、日志线程</li>
-</ul>
-</li>
-<li><p>Purge Thread</p>
-<ul>
-<li>undo页回收</li>
-</ul>
-</li>
-<li><p>Page Cleaner Thread</p>
-<ul>
-<li>脏页刷新</li>
-</ul>
-</li>
-</ul>
-<p>MVCC:</p>
-<ul>
-<li><p>事务以排他锁的形式修改原始数据</p>
-</li>
-<li><p>把修改前的数据存放于undo log，通过回滚指针与主数据关联</p>
-</li>
-<li><p>修改成功（commit）什么都不做，失败则恢复undo log中的数据（rollback）</p>
-</li>
-</ul>
-<p>InnoDB的操作可以分为当前读(current read)和快照读(snapshot read)：</p>
-<ul>
-<li><p>快照读(snapshot read)</p>
-<ul>
-<li>简单的select操作(不包括 select … lock in share mode, select … for update)</li>
-</ul>
-</li>
-<li><p>当前读(current read)</p>
-<ul>
-<li><p>select … lock in share mode</p>
-</li>
-<li><p>select … for update</p>
-</li>
-<li><p>insert</p>
-</li>
-<li><p>update</p>
-</li>
-<li><p>delete</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>快照读是通过MVVC来实现的，并没有真正解决不可重复读和幻读，只是读取历史快照而绕过，表现为避免了两个问题</p>
-<p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略，解决了不可重复读和幻读</p>
-<ul>
-<li><p>脏读：写加排它锁，事务结束释放；读加共享锁，读完立刻释放</p>
-</li>
-<li><p>不可重复读：写加排它锁，事务结束释放；读加共享锁，事务结束释放</p>
-</li>
-<li><p>幻读：写加排它锁，事务结束释放；读加间隙锁，事务结束释放</p>
-</li>
-</ul>
-<p>隔离级别不同，索引类型不同，加锁策略也不同：</p>
-<ul>
-<li><p>唯一索引：目标记录加record lock</p>
-</li>
-<li><p>非唯一索引：目标记录加record lock + gap lock</p>
-</li>
-<li><p>非索引：所有记录加record lock</p>
-</li>
-</ul>
-<p>最后附手写图一张：<br><img src="/2015/02/03/2015-02-03/innodb_sketch.jpg" alt></p>
+            <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">"First Puts"</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"First Printf"</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">"Second Puts"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  test();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ gcc -g test.c -o test</span><br><span class="line">kv@Eden:~/Code/Test$ ls</span><br><span class="line">test  test.c</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ readelf -a test</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">Dynamic section at offset <span class="number">0xe28</span> contains <span class="number">24</span> entries:</span><br><span class="line"> Tag                 Type                  Name/Value</span><br><span class="line"> <span class="number">0x0000000000000001</span> (NEEDED)             Shared library: [libc.so<span class="number">.6</span>]</span><br><span class="line"> <span class="number">0x000000000000000c</span> (INIT)               <span class="number">0x400418</span></span><br><span class="line"> <span class="number">0x000000000000000d</span> (FINI)               <span class="number">0x400644</span></span><br><span class="line"> <span class="number">0x0000000000000019</span> (INIT_ARRAY)         <span class="number">0x600e10</span></span><br><span class="line"> <span class="number">0x000000000000001b</span> (INIT_ARRAYSZ)       <span class="number">8</span> (bytes)</span><br><span class="line"> <span class="number">0x000000000000001a</span> (FINI_ARRAY)         <span class="number">0x600e18</span></span><br><span class="line"> <span class="number">0x000000000000001c</span> (FINI_ARRAYSZ)       <span class="number">8</span> (bytes)</span><br><span class="line"> <span class="number">0x000000006ffffef5</span> (GNU_HASH)           <span class="number">0x400298</span></span><br><span class="line"> <span class="number">0x0000000000000005</span> (STRTAB)             <span class="number">0x400330</span></span><br><span class="line"> <span class="number">0x0000000000000006</span> (SYMTAB)             <span class="number">0x4002b8</span></span><br><span class="line"> <span class="number">0x000000000000000a</span> (STRSZ)              <span class="number">68</span> (bytes)</span><br><span class="line"> <span class="number">0x000000000000000b</span> (SYMENT)             <span class="number">24</span> (bytes)</span><br><span class="line"> <span class="number">0x0000000000000015</span> (DEBUG)              <span class="number">0x0</span></span><br><span class="line"> <span class="number">0x0000000000000003</span> (PLTGOT)             <span class="number">0x601000</span></span><br><span class="line"> <span class="number">0x0000000000000002</span> (PLTRELSZ)           <span class="number">96</span> (bytes)</span><br><span class="line"> <span class="number">0x0000000000000014</span> (PLTREL)             RELA</span><br><span class="line"> <span class="number">0x0000000000000017</span> (JMPREL)             <span class="number">0x4003b8</span></span><br><span class="line"> <span class="number">0x0000000000000007</span> (RELA)               <span class="number">0x4003a0</span></span><br><span class="line"> <span class="number">0x0000000000000008</span> (RELASZ)             <span class="number">24</span> (bytes)</span><br><span class="line"> <span class="number">0x0000000000000009</span> (RELAENT)            <span class="number">24</span> (bytes)</span><br><span class="line"> <span class="number">0x000000006ffffffe</span> (VERNEED)            <span class="number">0x400380</span></span><br><span class="line"> <span class="number">0x000000006fffffff</span> (VERNEEDNUM)         <span class="number">1</span></span><br><span class="line"> <span class="number">0x000000006ffffff0</span> (VERSYM)             <span class="number">0x400374</span></span><br><span class="line"> <span class="number">0x0000000000000000</span> (<span class="literal">NULL</span>)               <span class="number">0x0</span></span><br><span class="line"></span><br><span class="line">Relocation section '.rela.dyn' at offset 0x3a0 contains 1 entries:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line"><span class="number">000000600f</span>f8  <span class="number">000400000006</span> R_X86_64_GLOB_DAT <span class="number">0000000000000000</span> __gmon_start__ + <span class="number">0</span></span><br><span class="line"></span><br><span class="line">Relocation section '.rela.plt' at offset 0x3b8 contains 4 entries:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line"><span class="number">000000601018</span>  <span class="number">000100000007</span> R_X86_64_JUMP_SLO <span class="number">0000000000000000</span> <span class="built_in">puts</span> + <span class="number">0</span></span><br><span class="line"><span class="number">000000601020</span>  <span class="number">000200000007</span> R_X86_64_JUMP_SLO <span class="number">0000000000000000</span> <span class="built_in">printf</span> + <span class="number">0</span></span><br><span class="line"><span class="number">000000601028</span>  <span class="number">000300000007</span> R_X86_64_JUMP_SLO <span class="number">0000000000000000</span> __libc_start_main + <span class="number">0</span></span><br><span class="line"><span class="number">000000601030</span>  <span class="number">000400000007</span> R_X86_64_JUMP_SLO <span class="number">0000000000000000</span> __gmon_start__ + <span class="number">0</span></span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ objdump -h test</span><br><span class="line"></span><br><span class="line">Sections:</span><br><span class="line">Idx Name          Size      VMA               LMA               File off  Algn</span><br><span class="line"> <span class="number">0</span> .interp        <span class="number">0000001</span>c  <span class="number">0000000000400238</span>  <span class="number">0000000000400238</span>  <span class="number">00000238</span>  <span class="number">2</span>**<span class="number">0</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, DATA</span><br><span class="line"> ...</span><br><span class="line"></span><br><span class="line"> <span class="number">9</span> .rela.plt      <span class="number">00000060</span>  <span class="number">00000000004003b</span>8  <span class="number">00000000004003b</span>8  <span class="number">000003b</span>8  <span class="number">2</span>**<span class="number">3</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, DATA</span><br><span class="line"> ...</span><br><span class="line"></span><br><span class="line"> <span class="number">11</span> .plt          <span class="number">00000050</span>  <span class="number">0000000000400440</span>  <span class="number">0000000000400440</span>  <span class="number">00000440</span>  <span class="number">2</span>**<span class="number">4</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, CODE</span><br><span class="line"> <span class="number">12</span> .text         <span class="number">000001b</span>2  <span class="number">0000000000400490</span>  <span class="number">0000000000400490</span>  <span class="number">00000490</span>  <span class="number">2</span>**<span class="number">4</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, CODE</span><br><span class="line"> ...</span><br><span class="line"></span><br><span class="line"> <span class="number">20</span> .dynamic      <span class="number">000001</span>d0  <span class="number">0000000000600e28</span>  <span class="number">0000000000600e28</span>  <span class="number">00000e28</span>  <span class="number">2</span>**<span class="number">3</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line"> <span class="number">21</span> .got          <span class="number">00000008</span>  <span class="number">0000000000600f</span>f8  <span class="number">0000000000600f</span>f8  <span class="number">00000f</span>f8  <span class="number">2</span>**<span class="number">3</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line"> <span class="number">22</span> .got.plt      <span class="number">00000038</span>  <span class="number">0000000000601000</span>  <span class="number">0000000000601000</span>  <span class="number">00001000</span>  <span class="number">2</span>**<span class="number">3</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line"> <span class="number">23</span> .data         <span class="number">00000010</span>  <span class="number">0000000000601038</span>  <span class="number">0000000000601038</span>  <span class="number">00001038</span>  <span class="number">2</span>**<span class="number">3</span></span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line"> <span class="number">24</span> .bss          <span class="number">00000008</span>  <span class="number">0000000000601048</span>  <span class="number">0000000000601048</span>  <span class="number">00001048</span>  <span class="number">2</span>**<span class="number">0</span></span><br><span class="line">                  ALLOC</span><br><span class="line"> ...</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ objdump -R test</span><br><span class="line"></span><br><span class="line">DYNAMIC RELOCATION RECORDS</span><br><span class="line">OFFSET           TYPE                VALUE</span><br><span class="line"><span class="number">0000000000600f</span>f8 R_X86_64_GLOB_DAT   __gmon_start__</span><br><span class="line"><span class="number">0000000000601018</span> R_X86_64_JUMP_SLOT  <span class="built_in">puts</span></span><br><span class="line"><span class="number">0000000000601020</span> R_X86_64_JUMP_SLOT  <span class="built_in">printf</span></span><br><span class="line"><span class="number">0000000000601028</span> R_X86_64_JUMP_SLOT  __libc_start_main</span><br><span class="line"><span class="number">0000000000601030</span> R_X86_64_JUMP_SLOT  __gmon_start__</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ objdump -d -j .plt test</span><br><span class="line"></span><br><span class="line">Disassembly of section .plt:</span><br><span class="line"></span><br><span class="line"><span class="number">0000000000400440</span> &lt;<span class="built_in">puts</span>@plt<span class="number">-0x10</span>&gt;:</span><br><span class="line">  <span class="number">400440</span>:    ff <span class="number">35</span> c2 <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        pushq  <span class="number">0x200bc2</span>(%rip)         # <span class="number">601008</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x8</span>&gt;</span><br><span class="line">  <span class="number">400446</span>:    ff <span class="number">25</span> c4 <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        jmpq   *<span class="number">0x200bc4</span>(%rip)        # <span class="number">601010</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x10</span>&gt;</span><br><span class="line">  <span class="number">40044</span>c:    <span class="number">0f</span> <span class="number">1f</span> <span class="number">40</span> <span class="number">00</span>              nopl   <span class="number">0x0</span>(%rax)</span><br><span class="line"></span><br><span class="line"><span class="number">0000000000400450</span> &lt;<span class="built_in">puts</span>@plt&gt;:</span><br><span class="line">  <span class="number">400450</span>:    ff <span class="number">25</span> c2 <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        jmpq   *<span class="number">0x200bc2</span>(%rip)        # <span class="number">601018</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x18</span>&gt;</span><br><span class="line">  <span class="number">400456</span>:    <span class="number">68</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>           pushq  $<span class="number">0x0</span></span><br><span class="line">  <span class="number">40045b</span>:    e9 e0 ff ff ff           jmpq   <span class="number">400440</span> &lt;_init+<span class="number">0x28</span>&gt;</span><br><span class="line"></span><br><span class="line"><span class="number">0000000000400460</span> &lt;<span class="built_in">printf</span>@plt&gt;:</span><br><span class="line">  <span class="number">400460</span>:    ff <span class="number">25</span> ba <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        jmpq   *<span class="number">0x200bba</span>(%rip)        # <span class="number">601020</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x20</span>&gt;</span><br><span class="line">  <span class="number">400466</span>:    <span class="number">68</span> <span class="number">01</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>           pushq  $<span class="number">0x1</span></span><br><span class="line">  <span class="number">40046b</span>:    e9 d0 ff ff ff           jmpq   <span class="number">400440</span> &lt;_init+<span class="number">0x28</span>&gt;</span><br><span class="line"></span><br><span class="line"><span class="number">0000000000400470</span> &lt;__libc_start_main@plt&gt;:</span><br><span class="line">  <span class="number">400470</span>:    ff <span class="number">25</span> b2 <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        jmpq   *<span class="number">0x200bb2</span>(%rip)        # <span class="number">601028</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x28</span>&gt;</span><br><span class="line">  <span class="number">400476</span>:    <span class="number">68</span> <span class="number">02</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>           pushq  $<span class="number">0x2</span></span><br><span class="line">  <span class="number">40047b</span>:    e9 c0 ff ff ff           jmpq   <span class="number">400440</span> &lt;_init+<span class="number">0x28</span>&gt;</span><br><span class="line"></span><br><span class="line"><span class="number">0000000000400480</span> &lt;__gmon_start__@plt&gt;:</span><br><span class="line">  <span class="number">400480</span>:    ff <span class="number">25</span> aa <span class="number">0b</span> <span class="number">20</span> <span class="number">00</span>        jmpq   *<span class="number">0x200baa</span>(%rip)        # <span class="number">601030</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x30</span>&gt;</span><br><span class="line">  <span class="number">400486</span>:    <span class="number">68</span> <span class="number">03</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>           pushq  $<span class="number">0x3</span></span><br><span class="line">  <span class="number">40048b</span>:    e9 b0 ff ff ff           jmpq   <span class="number">400440</span> &lt;_init+<span class="number">0x28</span>&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">kv@Eden:~/Code/Test$ gdb test</span><br><span class="line"></span><br><span class="line">(gdb) l</span><br><span class="line"><span class="number">1</span>    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="number">3</span>    <span class="function"><span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line"><span class="number">4</span>      <span class="built_in">puts</span>(<span class="string">"Start"</span>);</span><br><span class="line"><span class="number">5</span>      <span class="built_in">printf</span>(<span class="string">"First"</span>);</span><br><span class="line"><span class="number">6</span>      <span class="built_in">printf</span>(<span class="string">"Second"</span>);</span><br><span class="line"><span class="number">7</span>    &#125;</span><br><span class="line"><span class="number">8</span></span><br><span class="line"><span class="number">9</span>    <span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line"><span class="number">10</span>      test();</span><br><span class="line">(gdb) b <span class="number">4</span></span><br><span class="line">Breakpoint <span class="number">1</span> at <span class="number">0x40058a</span>: file test.c, line <span class="number">4.</span></span><br><span class="line">(gdb) b <span class="number">5</span></span><br><span class="line">Breakpoint <span class="number">2</span> at <span class="number">0x400594</span>: file test.c, line <span class="number">5.</span></span><br><span class="line">(gdb) b <span class="number">6</span></span><br><span class="line">Breakpoint <span class="number">3</span> at <span class="number">0x4005a3</span>: file test.c, line <span class="number">6.</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">(gdb) r</span><br><span class="line">Starting program: /home/kv/Code/Test/test</span><br><span class="line"></span><br><span class="line">Breakpoint <span class="number">1</span>, test () at test.c:<span class="number">4</span></span><br><span class="line"><span class="number">4</span>      <span class="built_in">puts</span>(<span class="string">"First Puts"</span>);</span><br><span class="line">(gdb) disas test</span><br><span class="line">Dump of assembler code <span class="keyword">for</span> function test:</span><br><span class="line">   <span class="number">0x0000000000400586</span> &lt;+<span class="number">0</span>&gt;:        push   %rbp</span><br><span class="line">   <span class="number">0x0000000000400587</span> &lt;+<span class="number">1</span>&gt;:        mov    %rsp,%rbp</span><br><span class="line">=&gt; <span class="number">0x000000000040058a</span> &lt;+<span class="number">4</span>&gt;:        mov    $<span class="number">0x400654</span>,%edi</span><br><span class="line">   <span class="number">0x000000000040058f</span> &lt;+<span class="number">9</span>&gt;:        callq  <span class="number">0x400450</span> &lt;<span class="built_in">puts</span>@plt&gt;</span><br><span class="line">   <span class="number">0x0000000000400594</span> &lt;+<span class="number">14</span>&gt;:    mov    $<span class="number">0x40065f</span>,%edi</span><br><span class="line">   <span class="number">0x0000000000400599</span> &lt;+<span class="number">19</span>&gt;:    mov    $<span class="number">0x0</span>,%eax</span><br><span class="line">   <span class="number">0x000000000040059e</span> &lt;+<span class="number">24</span>&gt;:    callq  <span class="number">0x400460</span> &lt;<span class="built_in">printf</span>@plt&gt;</span><br><span class="line">   <span class="number">0x00000000004005a3</span> &lt;+<span class="number">29</span>&gt;:    mov    $<span class="number">0x40066c</span>,%edi</span><br><span class="line">   <span class="number">0x00000000004005a8</span> &lt;+<span class="number">34</span>&gt;:    callq  <span class="number">0x400450</span> &lt;<span class="built_in">puts</span>@plt&gt;</span><br><span class="line">   <span class="number">0x00000000004005ad</span> &lt;+<span class="number">39</span>&gt;:    pop    %rbp</span><br><span class="line">   <span class="number">0x00000000004005ae</span> &lt;+<span class="number">40</span>&gt;:    retq   </span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x /<span class="number">3</span>i <span class="number">0x400450</span></span><br><span class="line">   <span class="number">0x400450</span> &lt;<span class="built_in">puts</span>@plt&gt;:            jmpq   *<span class="number">0x200bc2</span>(%rip)        # <span class="number">0x601018</span> &lt;<span class="built_in">puts</span>@got.plt&gt;</span><br><span class="line">   <span class="number">0x400456</span> &lt;<span class="built_in">puts</span>@plt+<span class="number">6</span>&gt;:        pushq  $<span class="number">0x0</span></span><br><span class="line">   <span class="number">0x40045b</span> &lt;<span class="built_in">puts</span>@plt+<span class="number">11</span>&gt;:        jmpq   <span class="number">0x400440</span></span><br><span class="line">(gdb) x /<span class="number">3</span>i <span class="number">0x400460</span></span><br><span class="line">   <span class="number">0x400460</span> &lt;<span class="built_in">printf</span>@plt&gt;:        jmpq   *<span class="number">0x200bba</span>(%rip)        # <span class="number">0x601020</span> &lt;<span class="built_in">printf</span>@got.plt&gt;</span><br><span class="line">   <span class="number">0x400466</span> &lt;<span class="built_in">printf</span>@plt+<span class="number">6</span>&gt;:        pushq  $<span class="number">0x1</span></span><br><span class="line">   <span class="number">0x40046b</span> &lt;<span class="built_in">printf</span>@plt+<span class="number">11</span>&gt;:    jmpq   <span class="number">0x400440</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x /<span class="number">2</span>x <span class="number">0x601018</span></span><br><span class="line"><span class="number">0x601018</span> &lt;<span class="built_in">puts</span>@got.plt&gt;:    <span class="number">0x00400456</span>    <span class="number">0x00000000</span></span><br><span class="line">(gdb) x /<span class="number">2</span>x <span class="number">0x601020</span></span><br><span class="line"><span class="number">0x601020</span> &lt;<span class="built_in">printf</span>@got.plt&gt;:    <span class="number">0x00400466</span>    <span class="number">0x00000000</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x /<span class="number">3</span>i <span class="number">0x400440</span></span><br><span class="line">   <span class="number">0x400440</span>:    pushq  <span class="number">0x200bc2</span>(%rip)        # <span class="number">0x601008</span></span><br><span class="line">   <span class="number">0x400446</span>:    jmpq   *<span class="number">0x200bc4</span>(%rip)       # <span class="number">0x601010</span></span><br><span class="line">   <span class="number">0x40044c</span>:    nopl   <span class="number">0x0</span>(%rax)</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x /<span class="number">4</span>x <span class="number">0x601008</span></span><br><span class="line"><span class="number">0x601008</span>:    <span class="number">0xf7ffe188</span>    <span class="number">0x00007fff</span>    <span class="number">0xf7defed0</span>    <span class="number">0x00007fff</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(gdb) b *<span class="number">0x400446</span></span><br><span class="line">Breakpoint <span class="number">4</span> at <span class="number">0x400446</span></span><br><span class="line">(gdb) c</span><br><span class="line">Continuing.</span><br><span class="line">Breakpoint <span class="number">4</span>, <span class="number">0x0000000000400446</span> in ?? ()</span><br><span class="line">(gdb) ni</span><br><span class="line">_dl_runtime_resolve () at ../sysdeps/x86_64/dl-trampoline.S:<span class="number">58</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(gdb) c</span><br><span class="line">Continuing.</span><br><span class="line">First Puts</span><br><span class="line">Breakpoint <span class="number">2</span>, test () at test.c:<span class="number">5</span></span><br><span class="line"><span class="number">5</span>      <span class="built_in">printf</span>(<span class="string">"First Printf"</span>);</span><br><span class="line">(gdb) c</span><br><span class="line">Continuing.</span><br><span class="line">Breakpoint <span class="number">4</span>, <span class="number">0x0000000000400446</span> in ?? ()</span><br><span class="line">(gdb) c</span><br><span class="line">Continuing.</span><br><span class="line">Breakpoint <span class="number">3</span>, test () at test.c:<span class="number">6</span></span><br><span class="line"><span class="number">6</span>      <span class="built_in">puts</span>(<span class="string">"Second Puts"</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(gdb) x /<span class="number">2</span>x <span class="number">0x601018</span></span><br><span class="line"><span class="number">0x601018</span> &lt;<span class="built_in">puts</span>@got.plt&gt;:    <span class="number">0xf7a7fa30</span>    <span class="number">0x00007fff</span></span><br></pre></td></tr></table></figure>
+<p>plt：位于代码段，函数相关，实现延迟绑定功能。<br>got：位于数据段，变量相关，实现位置无关代码功能。<br>got.plt：位于在数据段，函数相关，实现位置无关代码功能。</p>
 
           
         
@@ -621,7 +441,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/19/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/19/">19</a><span class="page-number current">20</span><a class="page-number" href="/page/21/">21</a><span class="space">&hellip;</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/21/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/19/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/19/">19</a><span class="page-number current">20</span><a class="page-number" href="/page/21/">21</a><span class="space">&hellip;</span><a class="page-number" href="/page/37/">37</a><a class="extend next" rel="next" href="/page/21/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -664,7 +484,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">36</span>
+                    <span class="site-state-item-count">37</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -838,7 +658,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">70</span>
+                      
+                    
+                    <span class="site-state-item-count">71</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

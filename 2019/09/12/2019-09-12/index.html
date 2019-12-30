@@ -110,7 +110,7 @@
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invoke_virtual 指令为例，分析 HotSpot JVM 解释器如何从操作数解析出 符号引用 信息。 背景类似 invoke_virtual 的字节码指令，在解析前，其操作数大小为 2 字节，存储了 常量池 （ConstantPool）索引，根据该索引可以一步步获取到 符号引用 信息；在 解析 阶段将 符号引用 解析成">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-12-26T15:17:31.261Z">
+<meta property="og:updated_time" content="2019-12-30T08:22:25.377Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HotSpot JVM源码分析（2）：由invoke指令看如何从操作数解析出符号引用信息">
 <meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invoke_virtual 指令为例，分析 HotSpot JVM 解释器如何从操作数解析出 符号引用 信息。 背景类似 invoke_virtual 的字节码指令，在解析前，其操作数大小为 2 字节，存储了 常量池 （ConstantPool）索引，根据该索引可以一步步获取到 符号引用 信息；在 解析 阶段将 符号引用 解析成">
@@ -399,7 +399,7 @@
 <p><code>ConstantPool::CPCACHE_INDEX_TAG</code> 做调试用，不必关注。</p>
 <p>经过上述调用后，获得紧跟字节码指令后的 <strong>常量池</strong> 索引。</p>
 <h3 id="获取-符号引用-信息"><a href="#获取-符号引用-信息" class="headerlink" title="获取 符号引用 信息"></a>获取 <strong>符号引用</strong> 信息</h3><p>开始正式解析（<em>openjdk\hotspot\src\share\vm\interpreter\linkResolver.cpp</em>）：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> LinkResolver::(CallInfo&amp; result, Handle recv, <span class="keyword">const</span> constantPoolHandle&amp; pool, <span class="keyword">int</span> index, Bytecodes::Code <span class="keyword">byte</span>, TRAPS) &#123;</span><br><span class="line">  <span class="keyword">switch</span> (<span class="keyword">byte</span>) &#123;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokestatic   : resolve_invokestatic   (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokespecial  : resolve_invokespecial  (result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokevirtual  : resolve_invokevirtual  (result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokehandle   : resolve_invokehandle   (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokedynamic  : resolve_invokedynamic  (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokeinterface: resolve_invokeinterface(result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> LinkResolver::resolve_invoke(CallInfo&amp; result, Handle recv, <span class="keyword">const</span> constantPoolHandle&amp; pool, <span class="keyword">int</span> index, Bytecodes::Code <span class="keyword">byte</span>, TRAPS) &#123;</span><br><span class="line">  <span class="keyword">switch</span> (<span class="keyword">byte</span>) &#123;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokestatic   : resolve_invokestatic   (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokespecial  : resolve_invokespecial  (result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokevirtual  : resolve_invokevirtual  (result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokehandle   : resolve_invokehandle   (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokedynamic  : resolve_invokedynamic  (result,       pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Bytecodes::_invokeinterface: resolve_invokeinterface(result, recv, pool, index, CHECK); <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>关注 <code>_invokevirtual</code> 指令：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> LinkResolver::resolve_invokevirtual(CallInfo&amp; result, Handle recv,</span><br><span class="line">                                          <span class="keyword">const</span> constantPoolHandle&amp; pool, <span class="keyword">int</span> index,</span><br><span class="line">                                          TRAPS) &#123;</span><br><span class="line"></span><br><span class="line">  <span class="function">LinkInfo <span class="title">link_info</span><span class="params">(pool, index, CHECK)</span></span>;</span><br><span class="line">  <span class="function">KlassHandle <span class="title">recvrKlass</span> <span class="params">(THREAD, recv.is_null()</span> ? <span class="params">(Klass*)</span>NULL : recv-&gt;<span class="title">klass</span><span class="params">()</span>)</span>;</span><br><span class="line">  resolve_virtual_call(result, recv, recvrKlass, link_info, <span class="comment">/*check_null_or_abstract*/</span><span class="keyword">true</span>, CHECK);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>本文只关注该行代码：</p>
@@ -477,6 +477,10 @@
 
           <div class="post-nav-prev post-nav-item">
             
+              <a href="/2019/10/03/2019-10-03/" rel="prev" title="HotSpot JVM源码分析（3）：由invoke指令看如何将符号引用解析成直接引用">
+                HotSpot JVM源码分析（3）：由invoke指令看如何将符号引用解析成直接引用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
           </div>
         </div>
       
@@ -549,7 +553,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">36</span>
+                    <span class="site-state-item-count">37</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -723,7 +727,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">70</span>
+                      
+                    
+                    <span class="site-state-item-count">71</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
