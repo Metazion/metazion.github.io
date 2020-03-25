@@ -111,7 +111,7 @@
 <meta property="og:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  普通select不加锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）  锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题    事务  四个特性：原">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2015/02/03/2015-02-03/innodb_sketch.jpg">
-<meta property="og:updated_time" content="2019-10-26T13:33:09.106Z">
+<meta property="og:updated_time" content="2020-03-25T16:06:48.391Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL InnoDB存储引擎要点">
 <meta name="twitter:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  普通select不加锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）  锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题    事务  四个特性：原">
@@ -398,7 +398,7 @@
 </li>
 <li><p>事务</p>
 <ul>
-<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过锁实现，原子性、一致性、持久性通过redo和undo实现</p>
+<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过MVCC和锁实现，原子性、持久性通过undo log和redo log实现，一致性依赖前三者，由应用层保证满足约束条件。</p>
 </li>
 <li><p>通过redo Log（重做日志）和undo Log（撤消日志）保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
 </li>
@@ -531,9 +531,11 @@
 <ul>
 <li><p>事务以排他锁的形式修改原始数据</p>
 </li>
-<li><p>把修改前的数据存放于undo log，通过回滚指针与主数据关联</p>
+<li><p>把修改前的数据存放于undo log，通过回滚指针与主数据关联，同时会记录下该行数据对应的创建版本号，即生成该数据行的事务ID</p>
 </li>
 <li><p>修改成功（commit）什么都不做，失败则恢复undo log中的数据（rollback）</p>
+</li>
+<li><p>查询操作时，拿到当前ReadView，即事务快照，是当前时间点系统内活跃的（未提交的）事务列表，对比要查询的数据最新及至历史版本，可得可见版本的数据行</p>
 </li>
 </ul>
 <p>InnoDB的操作可以分为当前读(current read)和快照读(snapshot read)：</p>
@@ -558,14 +560,22 @@
 </ul>
 </li>
 </ul>
-<p>快照读是通过MVVC来实现的，并没有真正解决不可重复读和幻读，只是读取历史快照而绕过，表现为避免了两个问题</p>
-<p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略，解决了不可重复读和幻读</p>
+<p>快照读是通过MVVC来实现的，视隔离级别不同，采用不同的ReadView生成策略</p>
 <ul>
-<li><p>脏读：写加排它锁，事务结束释放；读加共享锁，读完立刻释放</p>
+<li><p>已提交读：每次读操作都会生成一个新的ReadView</p>
 </li>
-<li><p>不可重复读：写加排它锁，事务结束释放；读加共享锁，事务结束释放</p>
+<li><p>可重复读：事务第一次进行读操作时才会生成一个ReadView</p>
 </li>
-<li><p>幻读：写加排它锁，事务结束释放；读加间隙锁，事务结束释放</p>
+<li><p>可串行化：同可重复读</p>
+</li>
+</ul>
+<p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略</p>
+<ul>
+<li><p>已提交读：写加排它锁，事务结束释放；读加共享锁，读完立刻释放</p>
+</li>
+<li><p>可重复读：写加排它锁，事务结束释放；读加共享锁，事务结束释放</p>
+</li>
+<li><p>可串行化：写加排它锁，事务结束释放；读加间隙锁，事务结束释放</p>
 </li>
 </ul>
 <p>隔离级别不同，索引类型不同，加锁策略也不同：</p>
@@ -908,7 +918,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
