@@ -103,16 +103,16 @@
 
 
   <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokeinterface 指令为例，分析 HotSpot JVM 如何解释执行 字节码指令 。 正文前面文章展示了从操作数解析出 符号引用 再解析出 直接引用 的过程，解析出的信息存储在 常量池缓存 中。那么这些信息是怎么使用的呢？ 直接上代码，因为代码较长，我们分段解释。 源码文件（openjdk\hotspot\src\s">
-<meta name="keywords" content="JVM,HotSopt,Java字节码,字节码指令,符号引用,直接引用,解释执行">
+<meta name="keywords" content="JVM,HotSopt,Java字节码,符号引用,直接引用,字节码指令,解释执行">
 <meta property="og:type" content="article">
-<meta property="og:title" content="HotSpot JVM源码分析（4）：由invoke指令看 **字节码指令** 如何解释执行">
+<meta property="og:title" content="HotSpot JVM源码分析（4）：由invoke指令看字节码指令如何解释执行">
 <meta property="og:url" content="https://qilu.me/2019/11/15/2019-11-15/index.html">
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokeinterface 指令为例，分析 HotSpot JVM 如何解释执行 字节码指令 。 正文前面文章展示了从操作数解析出 符号引用 再解析出 直接引用 的过程，解析出的信息存储在 常量池缓存 中。那么这些信息是怎么使用的呢？ 直接上代码，因为代码较长，我们分段解释。 源码文件（openjdk\hotspot\src\s">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-04-10T16:54:26.559Z">
+<meta property="og:updated_time" content="2020-04-10T16:56:04.409Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="HotSpot JVM源码分析（4）：由invoke指令看 **字节码指令** 如何解释执行">
+<meta name="twitter:title" content="HotSpot JVM源码分析（4）：由invoke指令看字节码指令如何解释执行">
 <meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokeinterface 指令为例，分析 HotSpot JVM 如何解释执行 字节码指令 。 正文前面文章展示了从操作数解析出 符号引用 再解析出 直接引用 的过程，解析出的信息存储在 常量池缓存 中。那么这些信息是怎么使用的呢？ 直接上代码，因为代码较长，我们分段解释。 源码文件（openjdk\hotspot\src\s">
 
 
@@ -130,7 +130,7 @@
   };
 </script>
 
-  <title>HotSpot JVM源码分析（4）：由invoke指令看 **字节码指令** 如何解释执行 | 樂只君子</title>
+  <title>HotSpot JVM源码分析（4）：由invoke指令看字节码指令如何解释执行 | 樂只君子</title>
   
 
 
@@ -303,7 +303,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">HotSpot JVM源码分析（4）：由invoke指令看 **字节码指令** 如何解释执行
+          <h1 class="post-title" itemprop="name headline">HotSpot JVM源码分析（4）：由invoke指令看字节码指令如何解释执行
               
             
           </h1>
@@ -430,11 +430,11 @@
           
             <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
           
-            <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
-          
             <a href="/tags/符号引用/" rel="tag"># 符号引用</a>
           
             <a href="/tags/直接引用/" rel="tag"># 直接引用</a>
+          
+            <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
           
             <a href="/tags/解释执行/" rel="tag"># 解释执行</a>
           
