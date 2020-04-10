@@ -103,14 +103,14 @@
 
 
   <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokevirtual 指令为例，分析 HotSpot JVM 解释器如何从 符号引用 解析出 直接引用 信息。 正文文接上回。 继续看下面这段源码（openjdk\hotspot\src\share\vm\interpreter\linkResolver.cpp）： 12345678void LinkResolver::res">
-<meta name="keywords" content="JVM,HotSopt,Java字节码,符号引用,直接引用,动态分派">
+<meta name="keywords" content="JVM,HotSopt,Java字节码,字节码指令,符号引用,直接引用,动态分派">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HotSpot JVM源码分析（3）：由invoke指令看如何将符号引用解析成直接引用">
 <meta property="og:url" content="https://qilu.me/2019/10/03/2019-10-03/index.html">
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokevirtual 指令为例，分析 HotSpot JVM 解释器如何从 符号引用 解析出 直接引用 信息。 正文文接上回。 继续看下面这段源码（openjdk\hotspot\src\share\vm\interpreter\linkResolver.cpp）： 12345678void LinkResolver::res">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-04-10T15:18:11.951Z">
+<meta property="og:updated_time" content="2020-04-10T17:12:46.773Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HotSpot JVM源码分析（3）：由invoke指令看如何将符号引用解析成直接引用">
 <meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokevirtual 指令为例，分析 HotSpot JVM 解释器如何从 符号引用 解析出 直接引用 信息。 正文文接上回。 继续看下面这段源码（openjdk\hotspot\src\share\vm\interpreter\linkResolver.cpp）： 12345678void LinkResolver::res">
@@ -444,6 +444,8 @@
             <a href="/tags/HotSopt/" rel="tag"># HotSopt</a>
           
             <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
+          
+            <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
           
             <a href="/tags/符号引用/" rel="tag"># 符号引用</a>
           
