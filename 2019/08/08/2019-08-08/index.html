@@ -103,7 +103,7 @@
 
 
   <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hots">
-<meta name="keywords" content="JVM,HotSopt,Java字节码,模板解释器,字节码指令,机器码,x86指令集">
+<meta name="keywords" content="JVM,HotSopt,模板解释器,Java字节码,字节码指令,机器码,x86指令集">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HotSpot JVM源码分析（1）：由movl看如何从字节码生成机器码">
 <meta property="og:url" content="https://qilu.me/2019/08/08/2019-08-08/index.html">
@@ -487,9 +487,9 @@
           
             <a href="/tags/HotSopt/" rel="tag"># HotSopt</a>
           
-            <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
-          
             <a href="/tags/模板解释器/" rel="tag"># 模板解释器</a>
+          
+            <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
           
             <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
           
