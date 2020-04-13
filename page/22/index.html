@@ -399,9 +399,9 @@
 </li>
 <li><p>事务</p>
 <ul>
-<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过MVCC和锁实现，原子性、持久性通过undo log和redo log实现，一致性依赖前三者，由应用层保证满足约束条件。</p>
+<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过MVCC和锁实现，原子性、持久性分别通过undo log（撤消日志）和redo log（重做日志）实现，一致性依赖前三者，由应用层保证满足约束条件。</p>
 </li>
-<li><p>通过redo Log（重做日志）和undo Log（撤消日志）保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
+<li><p>通过redo Log和undo Log保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
 </li>
 </ul>
 </li>
