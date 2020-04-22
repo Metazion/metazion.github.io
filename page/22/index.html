@@ -393,7 +393,7 @@
 </li>
 <li><p>普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁</p>
 </li>
-<li><p>三种行锁：Record（记录锁），Gap（间隙锁），Next-Key（前两种结合）</p>
+<li><p>三种行锁：Record Lock（记录锁），Gap Lock（间隙锁），Next-Key Lock（前两种结合）</p>
 </li>
 <li><p>行锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题</p>
 </li>
@@ -570,7 +570,7 @@
 <li><p>可重复读：事务第一次进行读操作时才会生成一个ReadView</p>
 </li>
 </ul>
-<p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略</p>
+<p>当前读是通过加锁来实现的，视隔离级别不同，采用不同的加锁策略</p>
 <ul>
 <li><p>已提交读：写加Record排它锁，事务结束释放；读加Record共享锁，事务结束释放</p>
 </li>
@@ -587,10 +587,9 @@
 </li>
 <li><p>非唯一索引：RC，索引记录和数据记录加Record Lock；RR，索引记录加Record Lock + Gap Lock，数据记录加Record Lock</p>
 </li>
-<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap LockLock；优化，不满足条件记录释放锁</p>
+<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap LockLock；优化，不满足条件的记录释放锁</p>
 </li>
 </ul>
-<p>最后附手写图一张：<br><img src="/2015/02/03/2015-02-03/innodb_sketch.jpg" alt></p>
 
           
         
