@@ -111,7 +111,7 @@
 <meta property="og:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  意向锁是为了协调行锁和表锁的关系，加行锁前，必须先加相应意向锁，意向锁间相互兼容，意向锁和表锁有互斥关系  普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Nex">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2015/02/03/2015-02-03/innodb_sketch.jpg">
-<meta property="og:updated_time" content="2020-04-14T12:56:43.743Z">
+<meta property="og:updated_time" content="2020-04-22T12:02:32.692Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL InnoDB存储引擎要点">
 <meta name="twitter:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  意向锁是为了协调行锁和表锁的关系，加行锁前，必须先加相应意向锁，意向锁间相互兼容，意向锁和表锁有互斥关系  普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁  三种行锁：Record（记录锁），Gap（间隙锁），Nex">
@@ -544,12 +544,12 @@
 <ul>
 <li><p>快照读(snapshot read)</p>
 <ul>
-<li>普通select操作(不包括 select … lock in share mode, select … for update)</li>
+<li>普通select操作(不包括 select … for share, select … for update)</li>
 </ul>
 </li>
 <li><p>当前读(current read)</p>
 <ul>
-<li><p>select … lock in share mode</p>
+<li><p>select … for share</p>
 </li>
 <li><p>select … for update</p>
 </li>
@@ -562,31 +562,31 @@
 </ul>
 </li>
 </ul>
-<p>快照读是通过MVVC来实现的，视隔离级别不同，采用不同的ReadView生成策略</p>
+<p>快照读是通过MVCC来实现的，视隔离级别不同，采用不同的ReadView生成策略</p>
 <ul>
 <li><p>已提交读：每次读操作都会生成一个新的ReadView</p>
 </li>
 <li><p>可重复读：事务第一次进行读操作时才会生成一个ReadView</p>
 </li>
-<li><p>可串行化：同可重复读</p>
-</li>
 </ul>
 <p>当前读是通过加record lock(记录锁)和gap lock(间隙锁)来实现的，视隔离级别不同，采用不同的加锁策略</p>
 <ul>
-<li><p>已提交读：写加排它锁，事务结束释放；读加共享锁，读完立刻释放</p>
+<li><p>已提交读：写加Record排它锁，事务结束释放；读加Record共享锁，事务结束释放</p>
 </li>
-<li><p>可重复读：写加排它锁，事务结束释放；读加共享锁，事务结束释放</p>
-</li>
-<li><p>可串行化：写加排它锁，事务结束释放；读加间隙锁，事务结束释放</p>
+<li><p>可重复读：写加Next-Key排它锁，事务结束释放；读加Next-Key共享锁，事务结束释放</p>
 </li>
 </ul>
+<p>未提交读：无MVCC，无锁</p>
+<p>可串行化：取消快照读，全为当前读</p>
 <p>隔离级别不同，索引类型不同，加锁策略也不同：</p>
 <ul>
-<li><p>唯一索引：目标记录加record lock</p>
+<li><p>聚簇索引：RC和RR，数据记录加Record Lock</p>
 </li>
-<li><p>非唯一索引：目标记录加record lock + gap lock</p>
+<li><p>唯一索引：RC和RR，索引记录和数据记录均加Record Lock</p>
 </li>
-<li><p>非索引：所有记录加record lock</p>
+<li><p>非唯一索引：RC，索引记录和数据记录加Record Lock；RR，索引记录加Record Lock + Gap Lock，数据记录加Record Lock</p>
+</li>
+<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap LockLock；优化，不满足条件记录释放锁</p>
 </li>
 </ul>
 <p>最后附手写图一张：<br><img src="/2015/02/03/2015-02-03/innodb_sketch.jpg" alt></p>
