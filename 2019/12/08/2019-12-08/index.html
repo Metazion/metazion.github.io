@@ -102,22 +102,22 @@
 
 
 
-  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hots">
-<meta name="keywords" content="JVM,HotSopt,Java字节码,汇编命令,机器码,字节码指令,x86指令集">
+  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
+<meta name="keywords" content="JVM,HotSopt,Java字节码,字节码指令,汇编器,机器码,x86指令集">
 <meta property="og:type" content="article">
-<meta property="og:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看如何从字节码生成机器码">
+<meta property="og:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码">
 <meta property="og:url" content="https://qilu.me/2019/12/08/2019-12-08/index.html">
 <meta property="og:site_name" content="樂只君子">
-<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hots">
+<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/general_instruction_format.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/mov.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/modrm_32.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/sib_32.jpg">
-<meta property="og:updated_time" content="2020-04-30T13:02:57.819Z">
+<meta property="og:updated_time" content="2020-04-30T13:33:56.947Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看如何从字节码生成机器码">
-<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hots">
+<meta name="twitter:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码">
+<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
 <meta name="twitter:image" content="https://qilu.me/2019/12/08/2019-12-08/general_instruction_format.jpg">
 
 
@@ -135,7 +135,7 @@
   };
 </script>
 
-  <title>HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看如何从字节码生成机器码 | 樂只君子</title>
+  <title>HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码 | 樂只君子</title>
   
 
 
@@ -308,7 +308,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看如何从字节码生成机器码
+          <h1 class="post-title" itemprop="name headline">HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码
               
             
           </h1>
@@ -386,7 +386,7 @@
 
       
         <p>本系列文章基于 <strong>OpenJDK 9</strong>，聚焦 <strong>x86</strong> 平台。</p>
-<p>本文以 <code>movl</code> 为例，分析 HotSpot JVM 解释器如何从字节码生成机器码。</p>
+<p>本文以 <code>movl</code> 为例，分析 HotSpot JVM如何使用汇编器生成机器码。</p>
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>类似 <strong>invokevirtual</strong> 的字节码指令，在 <strong>解析</strong> 阶段将 <strong>符号引用</strong> 解析成 <strong>直接引用</strong> 后，解析结果会放在 <strong>常量池缓存</strong>（<strong>ConstantPoolCache</strong>），后续调用直接使用缓存条目，而不用再次解析。</p>
 <p>常量池缓存结构如下（<em>openjdk\hotspot\src\share\vm\oops\cpCache.hpp</em>）：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">class ConstantPoolCache: public MetaspaceObj &#123;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">VMStructs</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">MetadataFactory</span></span>;</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">int</span>             _length;</span><br><span class="line">  ConstantPool*   _constant_pool;          <span class="comment">// the corresponding constant pool</span></span><br></pre></td></tr></table></figure>
@@ -489,11 +489,11 @@
           
             <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
           
-            <a href="/tags/汇编命令/" rel="tag"># 汇编命令</a>
+            <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
+          
+            <a href="/tags/汇编器/" rel="tag"># 汇编器</a>
           
             <a href="/tags/机器码/" rel="tag"># 机器码</a>
-          
-            <a href="/tags/字节码指令/" rel="tag"># 字节码指令</a>
           
             <a href="/tags/x86指令集/" rel="tag"># x86指令集</a>
           
