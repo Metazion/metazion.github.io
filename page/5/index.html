@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2019/03/16/2019-03-16/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2019/06/02/2019-06-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/03/16/2019-03-16/" itemprop="url">
-                  并发编程概述：内存屏障、Java volatile
+                <a class="post-title-link" href="/2019/06/02/2019-06-02/" itemprop="url">
+                  HotSpot JVM源码分析 - 方法调用与解释执行（1）：流程综述
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2019-03-16 13:00:00" itemprop="dateCreated datePublished" datetime="2019-03-16T13:00:00+08:00">2019-03-16</time>
+              <time title="创建时间：2019-06-02 21:00:00" itemprop="dateCreated datePublished" datetime="2019-06-02T21:00:00+08:00">2019-06-02</time>
             
 
             
@@ -383,35 +383,80 @@
       
         
           
-            <p>并发编程三条特性：</p>
-<ul>
-<li><p>原子性<br>原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。</p>
-</li>
-<li><p>可见性<br>可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。</p>
-</li>
-<li><p>有序性<br>有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。</p>
-</li>
-</ul>
-<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
-<p><img src="/2019/03/16/2019-03-16/architecture.png" alt="architecture"></p>
-<h3 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h3><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
-<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
-<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>内存。</p>
-<p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
-<p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
-<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
-<p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
-<p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
-<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>针对InvalidateQueue，确保其被立即处理。</p>
-<h3 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h3><p>针对StoreBuffer，确保收到invalidate ack后数据写入缓存。</p>
-<p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
-<h2 id="Java-volatile"><a href="#Java-volatile" class="headerlink" title="Java volatile"></a>Java volatile</h2><p>Java volatile通过内存屏障，实现了可见性和有序性。</p>
-<h3 id="Java内存屏障"><a href="#Java内存屏障" class="headerlink" title="Java内存屏障"></a>Java内存屏障</h3><p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
-<p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
-<p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
-<p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
-<h3 id="顺序规则"><a href="#顺序规则" class="headerlink" title="顺序规则"></a>顺序规则</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br><span class="line">          |                   |</span><br><span class="line">          |                   |</span><br><span class="line">       LoadStore          StoreStore</span><br><span class="line">          |                   |                       <span class="keyword">volatile</span> Load</span><br><span class="line">          |___________________|_____StoreLoad_________________________</span><br><span class="line">             <span class="keyword">volatile</span> Store                       |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                               LoadLoad            LoadStore</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                        (<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br></pre></td></tr></table></figure>
-<p>内存屏障确定了一种 happens-before 关系。</p>
+            <p>本系列文章基于 <strong>OpenJDK 9</strong>，聚焦 <strong>x86</strong> 平台。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>先看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sendUserVerify</span><span class="params">(String to, String subject, String content)</span> <span class="keyword">throws</span> RuntimeException </span>&#123;</span><br><span class="line">    SimpleMailMessage message = <span class="keyword">new</span> SimpleMailMessage();</span><br><span class="line">    message.setFrom(from);</span><br><span class="line">    message.setTo(to);</span><br><span class="line">    message.setSubject(subject);</span><br><span class="line">    message.setText(content);</span><br><span class="line">    mailSender.send(message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编译成字节码文件，方法体对应的可读字节码片段为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"> 0: new             #3</span><br><span class="line"> <span class="number">3</span>: dup</span><br><span class="line"> 4: invokespecial   #4</span><br><span class="line"> <span class="number">7</span>: astore          <span class="number">4</span></span><br><span class="line"> <span class="number">9</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">11</span>: aload_0</span><br><span class="line">12: getfield        #5</span><br><span class="line">15: invokevirtual   #6</span><br><span class="line"><span class="number">18</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">20</span>: aload_1</span><br><span class="line">21: invokevirtual   #7</span><br><span class="line"><span class="number">24</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">26</span>: aload_2</span><br><span class="line">27: invokevirtual   #8</span><br><span class="line"><span class="number">30</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">32</span>: aload_3</span><br><span class="line">33: invokevirtual   #9</span><br><span class="line"><span class="number">36</span>: aload_0</span><br><span class="line">37: getfield        #2</span><br><span class="line"><span class="number">40</span>: aload           <span class="number">4</span></span><br><span class="line">42: invokeinterface #10, 2</span><br><span class="line"><span class="number">47</span>: <span class="keyword">return</span></span><br></pre></td></tr></table></figure>
+<p>站在JVM的角度，想要执行这个字节码文件的这个方法，该如何处理以执行呢？</p>
+<p>为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。</p>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>首先，需要 <strong>加载</strong> 这个文件，并进行一系列 <strong>验证</strong>。此时文件内容已经在内存中，开始分析这个文件。</p>
+<h3 id="字节码文件格式"><a href="#字节码文件格式" class="headerlink" title="字节码文件格式"></a>字节码文件格式</h3><p>从头开始，依次看到魔数，版本号，常量池，基类，接口列表，字段表等等，直到方法表。</p>
+<p>在方法表的第N项，看到了这个方法。通过分析这个方法条目，可以知道方法的访问标志、名字、签名信息、属性表等。</p>
+<p>想要执行这个方法，那必然要关心方法体。在方法条目的属性表里，找到一个名为 <code>Code</code> 的属性，在这个属性条目里，看到了上面的字节码片段。</p>
+<p>终于找到你。</p>
+<h3 id="操作数到符号引用"><a href="#操作数到符号引用" class="headerlink" title="操作数到符号引用"></a>操作数到符号引用</h3><p>如前所列，一条接一条的字节码呈现在眼前。</p>
+<p>选择一条字节码来解析，比如 <code>15: invokevirtual   #6</code>，其对应的二进制代码为 <code>B6 00 06</code>。</p>
+<p>第1个字节 <code>B6</code> 为字节码指令，查询JVM源码可知对应字节码指令为 <code>_invokevirtual = 182, // 0xb6</code>；后续2个字节为操作数。由于尚未解析过，其代表常量池条目索引。查询常量池，可知该条目可读字节码片段为 <code>#6 = Methodref #3.#50</code>，二进制代码为 <code>0A 00 03 00 32</code>，表示它一个 <code>Methodref</code> 类型的常量池条目，其字段<code>#3.#50</code>也是常量池条目索引，又可以依此分析下去。</p>
+<p>最后，知道了字节码指令为 <code>_invokevirtual</code>，调用目标是一个方法，得到了这个方法所在类名、方法名称、方法签名。这些信息都是字符串形式的，即 <strong>符号引用</strong>。</p>
+<h3 id="符号引用到直接引用"><a href="#符号引用到直接引用" class="headerlink" title="符号引用到直接引用"></a>符号引用到直接引用</h3><p>光有符号引用， 是没法执行的，因为需要的是方法代码，一个方法地址。</p>
+<p>还好，已经知道了这个目标方法的各种信息。通过方法所在类名，可以找到这个类位于元空间（方法区）的类元数据。所谓类元数据就是已经加载好的类字节码文件在内存中的表示，里面必然有这个类的字段表，方法表等。这样再根据方法名、方法签名，就能在这个类元数据的方法表里找到对应的方法数据。这个方法数据地址，即 <strong>直接引用</strong>。</p>
+<h3 id="常量池缓存"><a href="#常量池缓存" class="headerlink" title="常量池缓存"></a>常量池缓存</h3><p>我们肯定不希望每次执行这个字节码，都像上面解析一遍，所以要把这个方法引用缓存起来。</p>
+<p>存在哪呢？</p>
+<p>既然符号引用在常量池里，那就开辟一个 <strong>常量池缓存</strong>，里面为 常量池缓存条目，用以保存直接引用信息。</p>
+<p>存哪些信息呢？</p>
+<p>似乎，可以把方法地址存起来，这样下次就能直接找到这个方法了。</p>
+<p>但是，方法情况可能各有不同。有些方法不能再被重写，比如已经是 <code>final</code> 的。这种好办，直接记下方法引用就好，反正它不会再变。可还有些方法可以被重写，比如 <code>virtual</code> 的，或者 <code>interface</code> 的。我们找到的只是通过静态类型查到的方法数据，子类可能已经重写了这个方法。实际调用对象如果是子类的实例，调用的方法应该是子类重写后的方法，也即动态类型的方法数据。</p>
+<blockquote>
+<p>静态类型：变量的声明类型</p>
+<p>动态类型： 变量的实际类型</p>
+<p>比如：Animal a = new Dog()，Dog继承或实现了Animal, a 的静态类型是Animal，动态类型是Dog。</p>
+</blockquote>
+<p>好在继承一个类（实现一个接口），同一个方法在基类（接口）中的类虚表索引（接口虚表索引）不会变。那么对于 <code>virtual</code> 或<code>interface</code> 的方法，我们记下类虚表索引或接口虚表索引就好，然后运行时在动态类型的类元数据里，在类虚表或接口虚表里根据索引找到重写的方法数据。对于 <code>virtual</code> 的方法，这样是可行的，但对于 <code>interface</code> 的方法，还要多记录接口引用，因为继承的基类只有一个，但实现的接口可能有多个，所以运行时还需要通过接口引用找到对应的接口虚表。</p>
+<h3 id="字节码重写"><a href="#字节码重写" class="headerlink" title="字节码重写"></a>字节码重写</h3><p>解析完成，有了常量池缓存，那么怎么跟原字节码指令关联起来使用呢？</p>
+<p>前面提到，指令操作数解析前为常量池索引，解析后，就用不到了，那么可以重写这个操作数，改为常量池缓存索引。</p>
+<p>那问题来了，字节码执行的时候，怎么知道这个操作数是常量池索引还是常量池缓存索引？</p>
+<p>索性，字节码文件加载进来后，就对 <strong>字节码重写</strong>，使操作数变为常量池缓存索引，并开辟好常量池缓存。</p>
+<p>此时，指令操作数为常量池缓存索引。因为尚未解析，还是需要常量池索引。那就在常量池缓存条目中增加一个字段，低16位保存常量池索引。</p>
+<p>字节码执行时，通过操作数直接找到常量池缓存条目。如果解析过，就直接使用；如果没解析过，就根据这个字段的低16位，获得常量池索引，进行上面的引用解析流程。</p>
+<p>怎么知道是否解析过？</p>
+<p>解析过后，在这个字段的高16位保存下对应的字节码指令。执行时，判断其是否等于字节码指令即可，因为没解析过时，高16位未赋值，必然不等。</p>
+<h3 id="字节码执行"><a href="#字节码执行" class="headerlink" title="字节码执行"></a>字节码执行</h3><p>前面说的操作数解析过程，实际上就是invoke类型字节码的部分执行步骤。</p>
+<p>对于一个字节码，实际是怎么执行的呢？</p>
+<p>最简单的，采用switch case，是哪种字节码指令就执行哪些操作。这种指令有200多个，根据经验，还可以采用查表方式，一种字节码指令对应一个指令执行函数。</p>
+<p>JVM有两种解释器：<strong>CPP解释器</strong> 和 <strong>模板解释器</strong>。前者采用了switch case方式，后者采用了查表方式。</p>
+<p>因为基本只使用模板解释器，所以只关注这个。</p>
+<p>既然是查表，key就是字节码指令，value是指令执行函数。这个执行函数执行极度频繁，必须尽可能高效，所以我们自己决定它的每行代码，确定执行步骤。JMV面向众多平台，我们就用汇编命令形式描述执行步骤，然后不同平台的汇编器将这些汇编命令翻译成各自平台的机器码。这些机器码，构成执行函数。</p>
+<h4 id="字节码到机器码"><a href="#字节码到机器码" class="headerlink" title="字节码到机器码"></a>字节码到机器码</h4><p>模板，就是这些汇编命令形式函数的集合。模板表，key是字节码指令，value是对应的模板。</p>
+<p>模板解释器初始化时，模板解释器生成器依次调用各个字节码指令对应的模板的生成函数，生成平台相关的执行函数的机器码。</p>
+<p>我们分配一块内存，作为一个 <code>CodeBuffer</code>，把它传给汇编器。上面提到的汇编命令，其实是汇编器类相应名称的函数，生成的过程，就是执行这些汇编命令形式函数的过程。每执行完一个汇编命令形式函数，就向CodeBuffer写入一段对应的机器码，全部执行完成，模板生成函数也就执行完了，就得到了一块全是机器码的内存块。这块机器码，构成执行函数，称作 <code>Codelet</code>，Codelet的入口地址，称作 <code>entry_point</code>。</p>
+<p>模板解释器初始化完成后，每个字节码指令与其指令执行函数entry的映射关系也构建完成，即 <strong>字节码指令派发表</strong>。</p>
+<p>需要执行字节码指令时，找到其指令执行函数entry，因为执行函数本身就是由机器码构成，跳转过去执行即可。</p>
+<h3 id="字节码派发"><a href="#字节码派发" class="headerlink" title="字节码派发"></a>字节码派发</h3><p>上面只是说了一条字节码的执行，一个方法有很多字节码，怎么依次执行这些字节码呢？</p>
+<p>简单说，可以使用一个循环，执行完一条就找到下一条。</p>
+<p>模板解释器采用了不同的做法。它在生成上面所述执行函数的字节码之后，还会插入一段派发代码。</p>
+<p>当前执行的字节码指令地址保存在 <code>_bcp_register</code>，即PC，程序计数器。字节码长度包括字节码指令长度 + 指令操作数长度。当前字节码指令地址 + 当前字节码长度就下一条字节码指令地址。例如，看前面字节码片段，<code>15:invokevirtual #6</code>，15即当前字节码指令地址偏移，<code>invokevirtual</code>字节码长度为 1字节指令长度 + 2字节操作数长度 = 3字节，<code>15 + 3 = 18</code>，即下一条字节码指令地址偏移，对应 <code>18: aload 4</code>。</p>
+<p>找到了下一条字节码指令地址偏移，加上方法字节码指令起始地址，即为下一条字节码指令地址。由此可获取到下一条字节码指令，从字节码指令派发表找到其对应的执行函数entry，跳转过去，就开始执行下一条字节码指令。</p>
+<p>插入的派发代码就是执行这个过程。</p>
+<h3 id="方法调用"><a href="#方法调用" class="headerlink" title="方法调用"></a>方法调用</h3><p>前面所说，都是在字节码层面。一段字节码构成一个方法，那么方法是如何开始执行的？毕竟，方法不开始执行，又怎么会执行到字节码指令呢。</p>
+<p>JVM中，方法分很多种，有些是普通Java方法，有些是native方法，有些是预先高效实现好了的，比如数学方法sin/cos等。这些方法，执行的环境差别很大，所以需要抽象出一层，来封装这些不同的操作，用以构建不同的执行环境。</p>
+<p>在JVM初始化时，用汇编器以汇编命令形式，生成一段机器码，类似字节码指令的执行函数，称作 <strong>方法例程</strong>。在解释器上，有一个映射表，存储着这些例程入口地址 <code>entry_point</code>。在方法链接阶段，找到这种方法的例程入口，设置到方法数据上。</p>
+<p>以普通Java方法为例，其例程需要分配和初始化局部变量，生成和维护Java栈帧，如果是 <code>synchronized</code>，还会加锁。之后找到方法的代码入口，即第一条字节码指令地址，设置到 <code>_bcp_register</code>，开始执行，类似前面的字节码派发。</p>
+<p>一条字节码指令执行完成后，就走前面的字节码派发过程，执行下一条字节码指令。</p>
+<p>方法的最后一条字节码指令，为 <code>return</code> 类指令。其工作大体是方法例程的反操作，比如，加过锁就解锁。最重要的就是清除该方法的栈帧，恢复栈到调用前状态。</p>
+<p>无论是从JVM C函数执行一个Java方法，还是invoke指令这种从Java方法调用另一个Java方法，都先把被调用方法的参数入栈，然后通过方法引用获取到方法例程入口。跳转过去，之后的工作就由例程接管，走前述流程。</p>
+<h3 id="JVM执行Java方法"><a href="#JVM执行Java方法" class="headerlink" title="JVM执行Java方法"></a>JVM执行Java方法</h3><p>JVM是用C++编写的，其运行后，是一个普通的进程，为了区分，称为C环境。而我们平时看到的Java代码，它们的调用运行等，称为Java环境。</p>
+<p>我们习以为常的，都是Java环境的认识。比如一个Java线程就是一个线程，一个Java方法就是一个方法，一个字节码指令就是一个指令。</p>
+<p>但站在C环境的角度，一切会变得截然不同。</p>
+<p>在C环境看来，Java字节码文件就是个普通的二进制文件，Java线程、Java方法、字节码指令，都是定义的一种不同对象，再普通不过。针对每个对象的不同操作，只是不同的程序逻辑而已。</p>
+<p>前面描述的那些，就是站在JVM的角度，处于C环境，看到的程序逻辑。比如Java方法调用，从C环境看，开始要生成新的Java栈帧并设置相关数据，结束要清除栈帧；从Java环境看，就是方法开始就自动有了一块栈空间，栈里还有方法执行需要的数据，结束了这块栈空间就自动回收了。这些Java环境的自动，就是C环境的程序逻辑保证的。</p>
+<p>凡事皆有开始。</p>
+<p>Java环境寄生于C环境，第一个Java方法被C环境执行后，Java环境才开始形成。</p>
+<p>一个Java方法，必然是由一个C函数负责执行的。</p>
+<p>Java方法需要栈，可以额外创建一个栈的对象，给Java方法执行用，入栈、出栈等，都是执行栈对象的函数而已。但是这样效率太低了，前面也说了，无论字节码指令还是方法例程，最终都是可直接执行的机器码。机器码可不认识这么个栈对象（事实上是逻辑上不用，机器码才不用），它们入栈出栈，这个栈是C环境的栈。所以自然而然，Java方法的栈，就直接寄生在负责执行它的C函数的栈里。除了栈操作，这些机器码还会使用各种寄存器。C环境的栈和各种寄存器，在执行的每一刻，它们的状态都是确定的，这是程序正确稳定执行的基础。如果这个C函数，因为执行Java方法，导致它的栈和各种寄存器，被修改得面目全非，JVM程序就乱了。</p>
+<p>所以，这个C函数，可以先在栈里分配一块空间，相当于局部变量，后面Java方法执行将用到的所有寄存器，都存到栈里。之后C函数会入栈Java方法参数，然后调用Java方法的方法例程。上面说过，Java方法执行完成后，会保证恢复栈到调用前状态，同时C函数也会把保存到栈里的各个寄存器恢复，C环境就恢复到了Java方法执行前的状态，仿佛从来没有执行过。事实上，C环境也不知道也不关心有没有执行过Java方法，因为可以认为这是其所在C函数的逻辑的一部分。</p>
+<p>这个C函数，为了效率，同样在JVM初始化时，用汇编器以汇编命令形式，生成为一段机器码，称作 <strong><code>call_stub</code> 例程</strong>。其例程入口地址 <code>entry_point</code> 同样会保存起来，JVM需要执行Java方法的时候，直接调用。</p>
+<p>方法例程和 <code>call_stub</code> 例程都是服务于方法执行，分别处理了不同层面的工作。方法例程负责处理Java方法执行相关的逻辑，比如初始化局部变量、生成栈帧等，而 <code>call_stub</code> 例程负责协调处理C函数到Java方法执行的准备和保护工作，比如保存、恢复寄存器，入栈Java方法参数等。</p>
 
           
         
@@ -454,7 +499,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/38/">38</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/39/">39</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -497,7 +542,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">38</span>
+                    <span class="site-state-item-count">39</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -673,7 +718,13 @@
                     
                       
                     
-                    <span class="site-state-item-count">71</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">74</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

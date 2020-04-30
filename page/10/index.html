@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2016/04/15/2016-04-15/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2017/08/12/2017-08-12/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2016/04/15/2016-04-15/" itemprop="url">
-                  C++11 异步任务实现（类Java ExecutorService）
+                <a class="post-title-link" href="/2017/08/12/2017-08-12/" itemprop="url">
+                  并发编程概述：内存屏障、Java volatile
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2016-04-15 20:00:00" itemprop="dateCreated datePublished" datetime="2016-04-15T20:00:00+08:00">2016-04-15</time>
+              <time title="创建时间：2017-08-12 13:00:00" itemprop="dateCreated datePublished" datetime="2017-08-12T13:00:00+08:00">2017-08-12</time>
             
 
             
@@ -347,7 +347,7 @@
                 <span class="post-meta-item-text">分类于</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Tech/" itemprop="url" rel="index"><span itemprop="name">Tech</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Lore/" itemprop="url" rel="index"><span itemprop="name">Lore</span></a></span>
 
                 
                 
@@ -383,10 +383,37 @@
       
         
           
-            <p>使用Java时，并发库提供很多有用的工具，比如ExecutorService，方便执行异步任务。C++11通过使用线程和lambda，可以很容易实现类似的功能。尽在代码中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AsyncService</span> &#123;</span></span><br><span class="line">    MZ_DISALLOW_COPY_AND_ASSIGN(AsyncService)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> Async_t = <span class="built_in">std</span>::function&lt;<span class="keyword">void</span>()&gt;;</span><br><span class="line">    <span class="keyword">using</span> AsyncQueue_t = <span class="built_in">std</span>::<span class="built_in">queue</span>&lt;Async_t&gt;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    AsyncThread** m_asyncThreads = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">int</span> m_threadSize = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::mutex m_asyncMutex;</span><br><span class="line">    <span class="built_in">std</span>::condition_variable m_asyncCond;</span><br><span class="line">    AsyncQueue_t m_asyncQueue;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    AsyncService();</span><br><span class="line"></span><br><span class="line">    ~AsyncService();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">Initialize</span><span class="params">(<span class="keyword">int</span> threadSize)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Finalize</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Push</span><span class="params">(Async_t async)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">Async_t <span class="title">Pop</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">AsyncService::AsyncService() &#123;&#125;</span><br><span class="line"></span><br><span class="line">AsyncService::~AsyncService() &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">bool</span> AsyncService::Initialize(<span class="keyword">int</span> threadSize) &#123;</span><br><span class="line">    m_threadSize = threadSize;</span><br><span class="line">    m_asyncThreads = <span class="keyword">new</span> AsyncThread*[m_threadSize];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> index = <span class="number">0</span>; index &lt; m_threadSize; ++index) &#123;</span><br><span class="line">        m_asyncThreads[index] = <span class="keyword">new</span> AsyncThread(*<span class="keyword">this</span>);</span><br><span class="line">        m_asyncThreads[index]-&gt;Initialize();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> AsyncService::Finalize() &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> index = <span class="number">0</span>; index &lt; m_threadSize; ++index) &#123;</span><br><span class="line">        m_asyncThreads[index]-&gt;Finalize();</span><br><span class="line">        SafeDelete(m_asyncThreads[index]);</span><br><span class="line">    &#125;</span><br><span class="line">    SafeDeleteArray(m_asyncThreads);</span><br><span class="line">    m_threadSize = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> AsyncService::Push(Async_t async) &#123;</span><br><span class="line">    <span class="built_in">std</span>::unique_lock&lt;<span class="built_in">std</span>::mutex&gt; lock(m_asyncMutex);</span><br><span class="line">    m_asyncQueue.push(async);</span><br><span class="line">    m_asyncCond.notify_all();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">AsyncService::Async_t AsyncService::Pop() &#123;</span><br><span class="line">    <span class="built_in">std</span>::unique_lock&lt;<span class="built_in">std</span>::mutex&gt; lock(m_asyncMutex);</span><br><span class="line">    m_asyncCond.wait(lock, [<span class="keyword">this</span>] &#123;</span><br><span class="line">        <span class="keyword">return</span> !m_asyncQueue.empty();</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> async = m_asyncQueue.front();</span><br><span class="line">    m_asyncQueue.pop();</span><br><span class="line">    <span class="keyword">return</span> async;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>使用方式很简单，调用Push接口即可。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">asyncService.Push([&amp;] &#123;</span><br><span class="line">    <span class="comment">// Do something</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
-<p><code>AsyncService</code> 提供异步任务功能接口，使用 <code>mutex</code> 和 <code>condition_variable</code> 实现多线程任务队列同步。线程依次从队列中取出任务并执行，为方便使用，任务使用lambda函数。</p>
+            <p>并发编程三条特性：</p>
+<ul>
+<li><p>原子性<br>原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。</p>
+</li>
+<li><p>可见性<br>可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。</p>
+</li>
+<li><p>有序性<br>有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。</p>
+</li>
+</ul>
+<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
+<p><img src="/2017/08/12/2017-08-12/architecture.png" alt="architecture"></p>
+<h3 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h3><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
+<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
+<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>内存。</p>
+<p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
+<p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
+<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
+<p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
+<p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
+<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>针对InvalidateQueue，确保其被立即处理。</p>
+<h3 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h3><p>针对StoreBuffer，确保收到invalidate ack后数据写入缓存。</p>
+<p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
+<h2 id="Java-volatile"><a href="#Java-volatile" class="headerlink" title="Java volatile"></a>Java volatile</h2><p>Java volatile通过内存屏障，实现了可见性和有序性。</p>
+<h3 id="Java内存屏障"><a href="#Java内存屏障" class="headerlink" title="Java内存屏障"></a>Java内存屏障</h3><p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
+<p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
+<p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
+<p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
+<h3 id="顺序规则"><a href="#顺序规则" class="headerlink" title="顺序规则"></a>顺序规则</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br><span class="line">          |                   |</span><br><span class="line">          |                   |</span><br><span class="line">       LoadStore          StoreStore</span><br><span class="line">          |                   |                       <span class="keyword">volatile</span> Load</span><br><span class="line">          |___________________|_____StoreLoad_________________________</span><br><span class="line">             <span class="keyword">volatile</span> Store                       |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                               LoadLoad            LoadStore</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                        (<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br></pre></td></tr></table></figure>
+<p>Store蕴含写语义，Load蕴含读语义，写与读期望构建一种 happens-before 关系，即一边写，一边读，读到了写的结果，就表示写对读可见了，且写与读之间有了先后关系。同时如果写之前的先后关系，读之后的有先后关系，那么它们之间也就有了先后关系，这就是 happens-before。</p>
+<p>内存屏障确定了一种 happens-before 关系。</p>
+<p>类似的写/读语义，还有Release/Acquire，Unlock/Lock。</p>
 
           
         
@@ -429,7 +456,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/38/">38</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/39/">39</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -472,7 +499,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">38</span>
+                    <span class="site-state-item-count">39</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -648,7 +675,13 @@
                     
                       
                     
-                    <span class="site-state-item-count">71</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">74</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
