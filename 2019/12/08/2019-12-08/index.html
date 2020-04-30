@@ -102,22 +102,22 @@
 
 
 
-  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
+  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspo">
 <meta name="keywords" content="JVM,HotSopt,Java字节码,字节码指令,汇编器,机器码,x86指令集">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码">
 <meta property="og:url" content="https://qilu.me/2019/12/08/2019-12-08/index.html">
 <meta property="og:site_name" content="樂只君子">
-<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
+<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspo">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/general_instruction_format.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/mov.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/modrm_32.jpg">
 <meta property="og:image" content="https://qilu.me/2019/12/08/2019-12-08/sib_32.jpg">
-<meta property="og:updated_time" content="2020-04-30T13:33:56.947Z">
+<meta property="og:updated_time" content="2020-04-30T13:37:56.076Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（5）：由movl看汇编器如何生成机器码">
-<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspot">
+<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 movl 为例，分析 HotSpot JVM 如何使用汇编器生成机器码。 背景类似 invokevirtual 的字节码指令，在 解析 阶段将 符号引用 解析成 直接引用 后，解析结果会放在 常量池缓存（ConstantPoolCache），后续调用直接使用缓存条目，而不用再次解析。 常量池缓存结构如下（openjdk\hotspo">
 <meta name="twitter:image" content="https://qilu.me/2019/12/08/2019-12-08/general_instruction_format.jpg">
 
 
@@ -386,7 +386,7 @@
 
       
         <p>本系列文章基于 <strong>OpenJDK 9</strong>，聚焦 <strong>x86</strong> 平台。</p>
-<p>本文以 <code>movl</code> 为例，分析 HotSpot JVM如何使用汇编器生成机器码。</p>
+<p>本文以 <code>movl</code> 为例，分析 HotSpot JVM 如何使用汇编器生成机器码。</p>
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>类似 <strong>invokevirtual</strong> 的字节码指令，在 <strong>解析</strong> 阶段将 <strong>符号引用</strong> 解析成 <strong>直接引用</strong> 后，解析结果会放在 <strong>常量池缓存</strong>（<strong>ConstantPoolCache</strong>），后续调用直接使用缓存条目，而不用再次解析。</p>
 <p>常量池缓存结构如下（<em>openjdk\hotspot\src\share\vm\oops\cpCache.hpp</em>）：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">class ConstantPoolCache: public MetaspaceObj &#123;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">VMStructs</span></span>;</span><br><span class="line">  friend <span class="class"><span class="keyword">class</span> <span class="title">MetadataFactory</span></span>;</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">int</span>             _length;</span><br><span class="line">  ConstantPool*   _constant_pool;          <span class="comment">// the corresponding constant pool</span></span><br></pre></td></tr></table></figure>
@@ -400,8 +400,8 @@
 <p>现在看一段源码（<em>openjdk\hotspot\src\cpu\x86\vm\interp_masm_x86.cpp</em>）：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> InterpreterMacroAssembler::get_cache_and_index_and_bytecode_at_bcp(Register cache,</span><br><span class="line">                                                                        Register index,</span><br><span class="line">                                                                        Register bytecode,</span><br><span class="line">                                                                        <span class="keyword">int</span> byte_no,</span><br><span class="line">                                                                        <span class="keyword">int</span> bcp_offset,</span><br><span class="line">                                                                        size_t index_size) &#123;</span><br><span class="line">  get_cache_and_index_at_bcp(cache, index, bcp_offset, index_size);</span><br><span class="line">  <span class="comment">// We use a 32-bit load here since the layout of 64-bit words on</span></span><br><span class="line">  <span class="comment">// little-endian machines allow us that.</span></span><br><span class="line">  movl(bytecode, Address(cache, index, Address::times_ptr, ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()));</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> shift_count = (<span class="number">1</span> + byte_no) * BitsPerByte;</span><br><span class="line">  <span class="keyword">assert</span>((byte_no == TemplateTable::f1_byte &amp;&amp; shift_count == ConstantPoolCacheEntry::bytecode_1_shift) ||</span><br><span class="line">         (byte_no == TemplateTable::f2_byte &amp;&amp; shift_count == ConstantPoolCacheEntry::bytecode_2_shift),</span><br><span class="line">         <span class="string">"correct shift count"</span>);</span><br><span class="line">  shrl(bytecode, shift_count);</span><br><span class="line">  <span class="keyword">assert</span>(ConstantPoolCacheEntry::bytecode_1_mask == ConstantPoolCacheEntry::bytecode_2_mask, <span class="string">"common mask"</span>);</span><br><span class="line">  andl(bytecode, ConstantPoolCacheEntry::bytecode_1_mask);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这段代码由解释器调用，用来生成 “获取 <strong>常量池缓存条目</strong>” 的机器码。</p>
-<p>这里一定要区分好 <strong>解释器</strong> 和 <strong>运行时</strong> 两种环境，代码由 <strong>解释器</strong> 调用，作用是生成供 <strong>运行时</strong> 调用的机器码。</p>
-<p>寄存器 <code>cache</code>, <code>index</code>, <code>bytecode</code> 分别用来存放 <strong>常量池缓存</strong> 首地址，<strong>常量池缓存条目</strong> 的数组索引和 字节码指令。</p>
+<p>这里一定要区分好 <strong>解释器</strong> 和 <strong>运行时</strong> 两种环境，代码由 <strong>解释器</strong> 调用，作用是生成供 <strong>运行时</strong> 执行的机器码。</p>
+<p>寄存器 <code>cache</code>, <code>index</code>, <code>bytecode</code> 分别用来存放 <strong>常量池缓存</strong> 首地址，<strong>常量池缓存条目</strong> 的数组索引和字节码指令。</p>
 <p>首先调用 <code>get_cache_and_index_at_bcp</code> 方法获取 <code>cache</code> 和 <code>index</code>。</p>
 <p>之后下面这行代码就用来获取 <strong>常量池缓存条目</strong> 的 <code>_indices</code> 字段数据，将其放在 <code>bytecode</code> 寄存器。再次强调，不是 <strong>解释器</strong> 执行时如此，而是生成的机器码在 <strong>运行时</strong> 如此。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">movl(bytecode, Address(cache, index, Address::times_ptr, ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()))</span><br></pre></td></tr></table></figure>
