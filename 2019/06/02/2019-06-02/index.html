@@ -102,18 +102,18 @@
 
 
 
-  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#123;    SimpleMailMessage message = new SimpleMailMessage">
-<meta name="keywords" content="JVM,HotSopt,Java字节码,方法调用,解释执行,模板解释器,汇编器,机器码,例程">
+  <meta name="description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#1">
+<meta name="keywords" content="JVM,HotSopt,Java字节码,解释执行,方法调用,模板解释器,汇编器,机器码,例程">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（1）：流程综述">
 <meta property="og:url" content="https://qilu.me/2019/06/02/2019-06-02/index.html">
 <meta property="og:site_name" content="樂只君子">
-<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#123;    SimpleMailMessage message = new SimpleMailMessage">
+<meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#1">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-04-30T13:32:51.470Z">
+<meta property="og:updated_time" content="2020-05-02T06:55:34.260Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（1）：流程综述">
-<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#123;    SimpleMailMessage message = new SimpleMailMessage">
+<meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。 背景先看一段代码： 12345678public void sendUserVerify(String to, String subject, String content) throws RuntimeException &amp;#1">
 
 
 
@@ -381,12 +381,12 @@
 
       
         <p>本系列文章基于 <strong>OpenJDK 9</strong>，聚焦 <strong>x86</strong> 平台。</p>
+<p>为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。</p>
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>先看一段代码：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sendUserVerify</span><span class="params">(String to, String subject, String content)</span> <span class="keyword">throws</span> RuntimeException </span>&#123;</span><br><span class="line">    SimpleMailMessage message = <span class="keyword">new</span> SimpleMailMessage();</span><br><span class="line">    message.setFrom(from);</span><br><span class="line">    message.setTo(to);</span><br><span class="line">    message.setSubject(subject);</span><br><span class="line">    message.setText(content);</span><br><span class="line">    mailSender.send(message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译成字节码文件，方法体对应的可读字节码片段为：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"> 0: new             #3</span><br><span class="line"> <span class="number">3</span>: dup</span><br><span class="line"> 4: invokespecial   #4</span><br><span class="line"> <span class="number">7</span>: astore          <span class="number">4</span></span><br><span class="line"> <span class="number">9</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">11</span>: aload_0</span><br><span class="line">12: getfield        #5</span><br><span class="line">15: invokevirtual   #6</span><br><span class="line"><span class="number">18</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">20</span>: aload_1</span><br><span class="line">21: invokevirtual   #7</span><br><span class="line"><span class="number">24</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">26</span>: aload_2</span><br><span class="line">27: invokevirtual   #8</span><br><span class="line"><span class="number">30</span>: aload           <span class="number">4</span></span><br><span class="line"><span class="number">32</span>: aload_3</span><br><span class="line">33: invokevirtual   #9</span><br><span class="line"><span class="number">36</span>: aload_0</span><br><span class="line">37: getfield        #2</span><br><span class="line"><span class="number">40</span>: aload           <span class="number">4</span></span><br><span class="line">42: invokeinterface #10, 2</span><br><span class="line"><span class="number">47</span>: <span class="keyword">return</span></span><br></pre></td></tr></table></figure>
 <p>站在JVM的角度，想要执行这个字节码文件的这个方法，该如何处理以执行呢？</p>
-<p>为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整个流程有个宏观上的把握。</p>
 <h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>首先，需要 <strong>加载</strong> 这个文件，并进行一系列 <strong>验证</strong>。此时文件内容已经在内存中，开始分析这个文件。</p>
 <h3 id="字节码文件格式"><a href="#字节码文件格式" class="headerlink" title="字节码文件格式"></a>字节码文件格式</h3><p>从头开始，依次看到魔数，版本号，常量池，基类，接口列表，字段表等等，直到方法表。</p>
 <p>在方法表的第N项，看到了这个方法。通过分析这个方法条目，可以知道方法的访问标志、名字、签名信息、属性表等。</p>
@@ -480,9 +480,9 @@
           
             <a href="/tags/Java字节码/" rel="tag"># Java字节码</a>
           
-            <a href="/tags/方法调用/" rel="tag"># 方法调用</a>
-          
             <a href="/tags/解释执行/" rel="tag"># 解释执行</a>
+          
+            <a href="/tags/方法调用/" rel="tag"># 方法调用</a>
           
             <a href="/tags/模板解释器/" rel="tag"># 模板解释器</a>
           
@@ -589,7 +589,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -771,7 +771,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

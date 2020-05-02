@@ -112,7 +112,7 @@
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://qilu.me/2016/02/20/2016-02-20/timezone_centos.jpg">
 <meta property="og:image" content="https://qilu.me/2016/02/20/2016-02-20/timezone_mysql.jpg">
-<meta property="og:updated_time" content="2019-04-03T12:13:25.706Z">
+<meta property="og:updated_time" content="2020-05-02T11:49:03.029Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java游戏服务器-时区问题">
 <meta name="twitter:description" content="游戏要推向海外多个市场时，不可避免地会遇到时区问题。 比如对台湾地区的用户，服务器可以部署在AWS的东京区。AWS的服务器和数据库，默认都使用UTC（零时区）时间，而台湾使用GMT+8（东八区）。 针对CentOS，可以使用cat /etc/localtime查看当前时区，输出如下： 针对MySQL，可以使用SHOW VARIABLES LIKE &amp;quot;%time_zone%&amp;quot;查看">
@@ -394,7 +394,8 @@
 <li>调整服务器和数据库时区为GMT+8。这最简单，逻辑上也不容易出错。但有时同一个服务器和数据库可能会部署多个服务器服务多个不同地区的玩家，全局的时区改变并不合适，也增加了部署成本。</li>
 <li>保持服务器和数据库时区为UTC，程序里改变时区。具体服务器采用那个时区，可通过配置文件决定，服务器启动时设置目标时区。</li>
 </ol>
-<p>通过实践，方案2更优。对于Java程序，可以这样设置时区：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TimeZone.setDefault(TimeZone.getTimeZone(<span class="string">"GMT+8"</span>));</span><br></pre></td></tr></table></figure></p>
+<p>通过实践，方案2更优。对于Java程序，可以这样设置时区：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TimeZone.setDefault(TimeZone.getTimeZone(<span class="string">"GMT+8"</span>));</span><br></pre></td></tr></table></figure>
 <p>这种方案下，程序和数据库的所有数据上的时间都应该使用通常的毫秒值，而不应该使用Timestamp/DateTime等类型，因为后者都是时区相关的。同时逻辑上跟日期时间相关的，比如零点刷新等，都应该使用Calendar来获取，这样时区相关才能做到现实合理。即做到服务器使用唯一时区，客户端遵循本地时区，数据上时区无关，逻辑上时区相关。</p>
 <p>以上解决方式更适用于分区分服，服务器仅服务于一个时区的情况。而全区全服，服务器要服务于多个时区的情况下，如何保证体验，还在探索。</p>
 
@@ -513,7 +514,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -695,7 +696,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

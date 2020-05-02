@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/08/20/2014-08-20/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/09/18/2014-09-18/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2014/08/20/2014-08-20/" itemprop="url">
-                  C++11封装Linux内核版红黑树
+                <a class="post-title-link" href="/2014/09/18/2014-09-18/" itemprop="url">
+                  导出C++到LUA
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2014-08-20 17:00:00" itemprop="dateCreated datePublished" datetime="2014-08-20T17:00:00+08:00">2014-08-20</time>
+              <time title="创建时间：2014-09-18 21:00:00" itemprop="dateCreated datePublished" datetime="2014-09-18T21:00:00+08:00">2014-09-18</time>
             
 
             
@@ -383,14 +383,43 @@
       
         
           
-            <p>红黑树是一种非常重要的数据结构，典型的用途是实现关联数组，STL中Map和Set的底层数据结构就是红黑树。</p>
-<p>红黑树理解起来不算难，但写出正确且高效的实现却不容易。Linux内核中有份C语言版本的红黑树，我将其做了C++封装，并基于此实现了Map作为用法演示。</p>
-<p>比较重要的定义如下。</p>
-<p>RBTreeNode: 红黑树节点<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> ValueType&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">RBTreeNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">using</span> Value_t = ValueType;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">enum</span> Color&#123;</span><br><span class="line">        RED = <span class="number">0</span>,</span><br><span class="line">        BLACK,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    RBTreeNode* m_parent = <span class="literal">nullptr</span>;</span><br><span class="line">    RBTreeNode* m_right = <span class="literal">nullptr</span>;</span><br><span class="line">    RBTreeNode* m_left = <span class="literal">nullptr</span>;</span><br><span class="line">    Color m_color = RED;</span><br><span class="line"></span><br><span class="line">    Value_t m_value;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure></p>
-<p>RBTree: 红黑树<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> NodeType</span><br><span class="line">, <span class="keyword">typename</span> CompareType&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RBTree</span> &#123;</span></span><br><span class="line">    DISALLOW_COPY_AND_ASSIGN(RBTree)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> Node_t = NodeType;</span><br><span class="line">    <span class="keyword">using</span> Compare_t = CompareType;</span><br><span class="line">    <span class="keyword">using</span> Value_t = <span class="keyword">typename</span> Node_t::Value_t;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    Node_t* m_root;</span><br><span class="line">    <span class="keyword">int</span> m_size;</span><br><span class="line">    Compare_t m_compare;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure></p>
-<p>Map：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> KeyType</span><br><span class="line">, <span class="keyword">typename</span> ValueType</span><br><span class="line">, <span class="keyword">typename</span> CompareType</span><br><span class="line">, <span class="keyword">typename</span> AllocatorFamily = HeapAllocator&lt;&gt;</span><br><span class="line">&gt;</span><br><span class="line">class Map &#123;</span><br><span class="line">    DISALLOW_COPY_AND_ASSIGN(Map)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> Key_t = KeyType;</span><br><span class="line">    <span class="keyword">using</span> Value_t = ValueType;</span><br><span class="line">    <span class="keyword">using</span> Compare_t = CompareType;</span><br><span class="line">    <span class="keyword">using</span> Data_t = Pair&lt;Key_t, Value_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> DataCompare_t = PairCompare&lt;Data_t, Compare_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Node_t = RBTreeNode&lt;Data_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Tree_t = RBTree&lt;Node_t, DataCompare_t&gt;;</span><br><span class="line">    <span class="keyword">using</span> Allocator_t = <span class="keyword">typename</span> AllocatorFamily::<span class="keyword">template</span> Rebind&lt;<span class="keyword">sizeof</span>(Node_t)&gt;;</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
-<p>完整代码放在了<a href="https://github.com/KaleoFeng/RBTreeAndMap" target="_blank" rel="noopener">Github</a>上。</p>
+            <p>Lua是现在比较常用的一种脚本语言，尤其在游戏开发领域。平时经常需要将C++的类、函数、变量等导出到Lua，以在脚本中编写逻辑。有很多现有的库，如LuaBind、LuaPlus、ToLua++等，可以实现该功能。下面简要描述下原理，假定读者对Lua有基本的掌握。</p>
+<p>注册C++类到Lua有几个步骤：</p>
+<p>1.注册C++类定义</p>
+<ul>
+<li><p>A.添加一个以类名命名的table到Lua全局表。</p>
+</li>
+<li><p>B.添加一个以类名命名的matatable，并将其设为A中table的matatable。接下来的类成员变量和函数都会添加到这个metatable中。</p>
+</li>
+</ul>
+<p>2.注册C++类成员变量</p>
+<ul>
+<li><p>A.设置1.B中metatable的<strong>__index</strong>、<strong>__newindex</strong>等metamethod为实现了get、set等操作的c函数。Lua脚本中索引类成员变量进行取值或设值操作时，将调用对应的的c函数。</p>
+</li>
+<li><p>B.将类成员变量以变量名为键，以成员变量偏移为值，添加到1.B的metatable中。为了方便2.A的get、set等C函数操作，我们可能对该数据用结构体做数据封装。</p>
+</li>
+</ul>
+<p>3.注册C++成员函数</p>
+<ul>
+<li>A.与2.B类似，但我们以函数名为键，以一个ccloure作为值。该closure包括一个类似get/set的以函数偏移作为upvalue的c函数。同样为了该c函数的操作方便，我们可能对该upvalue用结构体做数据封装。</li>
+</ul>
+<p>4.注册C++类实例</p>
+<ul>
+<li>A. 创建一个userdata来保存该实例地址，同样也可能用结构体做数据封装，并设置1.B的metatable作为该userdata的metatable。该userdata会以实例名为键添加到Lua全局表。</li>
+</ul>
+<p>下面举例说明实际调用流程。</p>
+<ul>
+<li><p>假设C++中有如下类A，其有成员函数f，成员变量v，A的一个实例为a。我们已经进行了上述工作将所有数据注册到Lua脚本。</p>
+</li>
+<li><p>当在脚本中调用<code>a.f()</code>时，a在Lua全局表，实际为4.A所述userdata，userdata中没有f，则到其1.B中metatable查找，由于metable设置了<strong>__index</strong>元方法，会使用2.A中的get函数将f为键值的即3.A中所述cclosure放到栈顶，然后进行()函数调用，执行3.A中C函数，该C函数取得a实例地址aa，根据upvalue取得函数偏移fo，最终调用<code>aa-&gt;fo()</code>，即成功执行。</p>
+</li>
+<li><p>当在脚本使用<code>local data = a.v</code>时，流程类似，但会在get函数中根据实例地址aa和成员变量偏移fo取<code>aa-&gt;fo</code>值设给data，而不进行后续操作。</p>
+</li>
+<li><p>当在脚本使用<code>a.v = data</code>时，流程类似，但会使用<strong>__newindex</strong>元方法set函数，实例地址aa和成员变量偏移vo得到<code>aa-&gt;vo</code>并设置data值。</p>
+</li>
+</ul>
+<p>理解了类似方法和思想，再添加更多特性比如继承类注册、全局函数注册等，就相对容易了。</p>
+<p>本文导出方法参考了网络上的部分实现，代码在<a href="https://github.com/KaleoFeng/MetaLua" title="Github" target="_blank" rel="noopener">这里</a>。</p>
 
           
         
@@ -433,7 +462,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/28/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/28/">28</a><span class="page-number current">29</span><a class="page-number" href="/page/30/">30</a><span class="space">&hellip;</span><a class="page-number" href="/page/39/">39</a><a class="extend next" rel="next" href="/page/30/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/28/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/28/">28</a><span class="page-number current">29</span><a class="page-number" href="/page/30/">30</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/30/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -476,7 +505,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -658,7 +687,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

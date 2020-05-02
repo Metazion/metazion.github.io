@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/05/01/2015-05-01/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/07/16/2015-07-16/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2015/05/01/2015-05-01/" itemprop="url">
-                  又是一年
+                <a class="post-title-link" href="/2015/07/16/2015-07-16/" itemprop="url">
+                  Java游戏服务器-概述
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2015-05-01 23:00:00" itemprop="dateCreated datePublished" datetime="2015-05-01T23:00:00+08:00">2015-05-01</time>
+              <time title="创建时间：2015-07-16 17:00:00" itemprop="dateCreated datePublished" datetime="2015-07-16T17:00:00+08:00">2015-07-16</time>
             
 
             
@@ -347,7 +347,7 @@
                 <span class="post-meta-item-text">分类于</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Trifle/" itemprop="url" rel="index"><span itemprop="name">Trifle</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Tech/" itemprop="url" rel="index"><span itemprop="name">Tech</span></a></span>
 
                 
                 
@@ -383,15 +383,17 @@
       
         
           
-            <p>去年的今天，开了这个博客，这么快，一年又过去了。</p>
-<p>开始的几个月，凭着一股新鲜和激情的劲儿，写了些文章。最近几个月，却有开始荒废了。代码也是，过年回来，Github上就鲜少增加新的色块了。</p>
-<p>虽然东西出的少了，最近的事儿却没少做。</p>
-<p>年后学了不少东西，有时也想写博客记录下来。可写出一篇中意的文章总是很花费时间和精力的，架不住懒，尤其是想到要图文搭配，着实麻烦，就在心理暗示下放着了。</p>
-<p>代码方面。之前写的东西因为一直没有项目驱动，没有愿望更新。而新的项目，因为没有需求驱动，也不着手。接下来要打破下怪圈才是。</p>
-<p>这一两个月还在减肥，一年前向别人承诺的事儿，现在才做。每天只有中午能正常吃一顿，早晚两餐都在控制，大部分时候是燕麦片+奶粉+葡萄干。晚上也增加了室内运动，半小时左右。减肥这事儿，易或难不怎么好说，最大的对手就是自己。那些不断冒出的“今天怎么怎么就吃点好的/不做运动了吧”的念头，总是给自己不好的暗示，挺过了，也就跨越了。效果是有的，已经减掉4KG，比较遗憾的就是该减的地方还是没什么动静。革命尚未成功，仍需努力。</p>
-<p>游戏快上线了，值得欣慰的是还是没怎么加班。但有时投入进去，到下午5、6点钟就感觉精神疲惫，做不了什么了。会尽自己所能，毕竟已经投入三年。</p>
-<p>这些日子也在考虑未来定居问题。初步目的地是杭州，心路历程就不细表了，正在为此做准备。</p>
-<p>马上进入盛夏了，一年里最喜欢的这段时间，希望一切都更好。</p>
+            <p>上个项目结束后，转做手游。新接手的项目，需要从头构建服务器。之前一直做C++，手游以Java居多，同时我也想做些不同的东西，于是时隔8年后再次捡起Java。好在服务器开发的领域知识是主要的，语言是其次，但一些惯例技巧还是需要慢慢熟知。这个系列博客，就是记录其中点滴。</p>
+<p>新项目是休闲类游戏，服务器需求比较简单，采用分区分服机制。客户端通过短连接或长连接向服务器主动请求，服务器返回响应数据。不用HTTP是为了减少网络包大小，同时有更多可控性。不用UDP是希望尽量利用TCP的特性保证数据包的可靠传输。</p>
+<p>鉴于需求较简单，服务器只分了两种，LoginServer和GameServer。数据存储使用了Mysql和阿里云OSS，缓存使用了Redis。</p>
+<p>LoginServer负责账户创建和登录等，同时也管理服务器列表。一个大区可以有若干个，采用DNS负载均衡，客户端行为主要有三种，注册、登录和选择服务器，每次登录流程需要连接同一个服务器。</p>
+<p>GameServer负责具体的游戏逻辑。主要分三层：网络、逻辑和数据存取。网络使用Netty，开一个Boss线程和CPU数目的Worker线程。逻辑单线程，有消息队列，网络层收到的消息放入该队列，等待处理。逻辑若有阻塞当前线程的数据存取需求，比如读写数据库或存档上传下载等，封装成任务交由数据存取层处理。数据存取层负责处理同步数据请求任务，其使用线程池，包含CPU数目的固定线程。任务执行完成后，逻辑线程进行后续的操作。</p>
+<p>数据存储采用了Mysql和阿里云OSS。Mysql主要用于角色ID生成和便于信息查询，游戏数据以OSS记录为准。</p>
+<p>为了提高读写效率，增加并发，GameServer采用了缓存策略，有两级缓存：内存和Redis。平时逻辑操作的都是内存数据。玩家进入游戏加载数据时，首先查看内存，没有则查看Redis，没有则查询数据库和OSS，加载后也会将数据缓存到Redis。</p>
+<p>由于逻辑操作的都是内存数据，若服务器发生宕机等情形，会导致数据丢失，即所谓回档。为解决这个问题，数据会以30秒间隔定时写入Redis，300秒间隔写入数据库和OSS。同时，对于涉及金钱等的关键操作，每次都会标记数据记录为dirty，逻辑线程一旦检测到dirty，则会立刻发起写入Redis、数据库和OSS的同步任务。这样不能保证数据百分百不会丢失，但已足够实用有效。</p>
+<p>本文是对目前项目服务器架构的简要介绍，一些细节问题将在后续文章中具体论述。</p>
+<p>公共库仓库：<a href="https://github.com/KaleoFeng/JMetazion.git" target="_blank" rel="noopener">JMetazion</a></p>
+<p>服务器示例仓库：<a href="https://github.com/KaleoFeng/JGameDemo.git" target="_blank" rel="noopener">JGameDemo</a></p>
 
           
         
@@ -434,7 +436,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/20/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><span class="page-number current">21</span><a class="page-number" href="/page/22/">22</a><span class="space">&hellip;</span><a class="page-number" href="/page/39/">39</a><a class="extend next" rel="next" href="/page/22/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/20/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><span class="page-number current">21</span><a class="page-number" href="/page/22/">22</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/22/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -477,7 +479,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -659,7 +661,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

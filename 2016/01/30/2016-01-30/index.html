@@ -110,7 +110,7 @@
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="最近游戏已经基本完成，开始小规模内测。目前开发环境是在Windows下，服务器使用阿里云CentOS，这就牵扯到如何方便部署程序(包括数据，下同)。 最开始做法是Windows下export程序，然后使用FileZilla通过sftp上传到目标服务器。说起来好像并不复杂，而且部署并不频繁，起初还能接受，但慢慢不胜其烦。因为每次要部署Login/Game/Journal3类服务器，重复操作实在繁琐。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-04-03T12:13:25.705Z">
+<meta property="og:updated_time" content="2020-05-02T11:46:46.623Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java游戏服务器-Windows平台自动部署程序到Linux平台">
 <meta name="twitter:description" content="最近游戏已经基本完成，开始小规模内测。目前开发环境是在Windows下，服务器使用阿里云CentOS，这就牵扯到如何方便部署程序(包括数据，下同)。 最开始做法是Windows下export程序，然后使用FileZilla通过sftp上传到目标服务器。说起来好像并不复杂，而且部署并不频繁，起初还能接受，但慢慢不胜其烦。因为每次要部署Login/Game/Journal3类服务器，重复操作实在繁琐。">
@@ -396,9 +396,11 @@
 <blockquote>
 <p><a href="https://github.com/bmatzelle/gow/releases" target="_blank" rel="noopener"> Gow (Gnu On Windows)</a> is the lightweight alternative to Cygwin. It uses a convenient Windows installer that installs about 130 extremely useful open source UNIX applications compiled as native win32 binaries. It is designed to be as small as possible, about 10 MB, as opposed to Cygwin which can run well over 100 MB depending upon options.</p>
 </blockquote>
-<p>有了tar和sftp等仿Linux命令，脚本就很容易实现了，示例如下。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tar -zcf Test.tar.gz Test</span><br><span class="line">md5sum Test.tar.gz</span><br><span class="line">psftp root@123.45.67.89 -pw 123456 -b psftp.txt</span><br><span class="line">rm -rf Test.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>有了tar和sftp等仿Linux命令，脚本就很容易实现了，示例如下。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tar -zcf Test.tar.gz Test</span><br><span class="line">md5sum Test.tar.gz</span><br><span class="line">psftp root@123.45.67.89 -pw 123456 -b psftp.txt</span><br><span class="line">rm -rf Test.tar.gz</span><br></pre></td></tr></table></figure>
 <p>首先对程序目录打包，其次计算md5，再通过sftp上传到Linux服务器，最后清理压缩文件。</p>
-<p>上传命令在psftp.txt中，如下。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/test/</span><br><span class="line">lcd E:/Test/</span><br><span class="line">put Test.tar.gz</span><br><span class="line">!md5sum Test.tar.gz</span><br><span class="line">exit</span><br></pre></td></tr></table></figure></p>
+<p>上传命令在psftp.txt中，如下。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/test/</span><br><span class="line">lcd E:/Test/</span><br><span class="line">put Test.tar.gz</span><br><span class="line">!md5sum Test.tar.gz</span><br><span class="line">exit</span><br></pre></td></tr></table></figure>
 <p>即将Windows的E:/Test/下的Test.tar.gz上传到目标Linux服务器的/home/test/目录下，并计算md5。</p>
 <p>另外，查看了一些资料，目前还没找到2、3都能通过Windows上的一个脚本完成的方法，只能分开进行。</p>
 
@@ -517,7 +519,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -699,7 +701,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

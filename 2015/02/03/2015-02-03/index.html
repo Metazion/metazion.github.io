@@ -110,7 +110,7 @@
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  意向锁是为了协调行锁和表锁的关系，加行锁前，必须先加相应意向锁，意向锁间相互兼容，意向锁和表锁有互斥关系  普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁  三种行锁：Record Lock（记录锁），Gap Loc">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-04-22T14:17:51.915Z">
+<meta property="og:updated_time" content="2020-04-30T15:08:46.337Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL InnoDB存储引擎要点">
 <meta name="twitter:description" content="支持功能:  行级锁  四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁  意向锁是为了协调行锁和表锁的关系，加行锁前，必须先加相应意向锁，意向锁间相互兼容，意向锁和表锁有互斥关系  普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁  三种行锁：Record Lock（记录锁），Gap Loc">
@@ -576,7 +576,7 @@
 </ul>
 <p>未提交读：无MVCC，无锁</p>
 <p>可串行化：取消快照读，全为当前读</p>
-<p>隔离级别不同，索引类型不同，加锁策略也不同：</p>
+<p>隔离级别不同，索引类型不同，加锁策略也不同，比如同样是当前读，where key = 1：</p>
 <ul>
 <li><p>聚簇索引：RC和RR，数据记录加Record Lock</p>
 </li>
@@ -584,7 +584,7 @@
 </li>
 <li><p>非唯一索引：RC，索引记录和数据记录加Record Lock；RR，索引记录加Record Lock + Gap Lock，数据记录加Record Lock</p>
 </li>
-<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap LockLock；优化，不满足条件的记录释放锁</p>
+<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap Lock；优化，不满足条件的记录释放锁</p>
 </li>
 </ul>
 
@@ -701,7 +701,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -883,7 +883,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

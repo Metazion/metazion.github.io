@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2014/12/15/2014-12-15/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/01/17/2015-01-17/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2014/12/15/2014-12-15/" itemprop="url">
-                  MMO游戏客户端MetazionClient实现
+                <a class="post-title-link" href="/2015/01/17/2015-01-17/" itemprop="url">
+                  C++14 变长参数模板（Variadic templates）的适用场景
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2014-12-15 21:00:00" itemprop="dateCreated datePublished" datetime="2014-12-15T21:00:00+08:00">2014-12-15</time>
+              <time title="创建时间：2015-01-17 22:08:00" itemprop="dateCreated datePublished" datetime="2015-01-17T22:08:00+08:00">2015-01-17</time>
             
 
             
@@ -383,13 +383,17 @@
       
         
           
-            <p>之前有<a href="/post/tech/2014-10-26">文章</a>介绍了MetazionWorld的开发初衷，有了服务器，就需要一个客户端来走下流程。</p>
-<p>刚毕业时做的是一个2D塔防类网络游戏，历时一年，却终究没能上线。这几年里，一直对其念念不忘，总想着有一天要重写实现它。于是客户端与服务器的内容就有了。</p>
-<p>离当初做那个游戏时已经过了四年，很多技术都在改变和涌现。这次重写，自然要采用新的东西。游戏引擎改用Cocos，虽然之前也有写过一片文章说更喜欢Unity。一来Unity更着重编辑器而非设计和编码，与我的喜好总有些不相称，二来网络库需要用Metazion，C++实现更方便。</p>
-<p>Cocos引擎一直迭代很快，这个游戏将采用3.3版本，Cocos Studio采用2.0.6版本，不会同步升级。</p>
-<p>使用Metazion时遇到一些问题。Cocos使用Visual Studio 2015编译会各种问题，具体细节就不说了，总之不好或不值得解决，只有使用2013平台工具集。但Metazion采用了最新特性，2013已经不能编过，所以只好分化出了一个2013版本，放在<a href="https://github.com/Metazion/Metazion.git" target="_blank" rel="noopener">Metazion Studio</a>下，只提供了头文件和预编的库文件。</p>
-<p>MetazionWorld原本设计为MMORPG架构，但因为这个游戏并非RPG类，所以服务器架构可能会随之调整。</p>
-<p>客户端项目命名为<a href="https://github.com/KaleoFeng/MetazionClient.git" target="_blank" rel="noopener">MetazionClient</a>，依然在GitHub上。</p>
+            <p>变长参数模板是C++14新增的特性。具体定义就不赘述了，我们更多关心的是这种特性用在什么地方。</p>
+<p>下面直接列出代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdint&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">Function</span><span class="params">(T t, Args... args)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    Function(args...);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">Function</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Dummy</span><span class="params">(Args... args)</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestVaradicTemplate</span><span class="params">(Args... args)</span> </span>&#123;</span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 1:\n"</span>);</span><br><span class="line">    Function(args...);</span><br><span class="line"></span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 2:\n"</span>);</span><br><span class="line">    Dummy(Function(args)...);</span><br><span class="line"></span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 3:\n"</span>);</span><br><span class="line">    <span class="keyword">auto</span> exeFunc = [](<span class="keyword">auto</span> t) &#123; <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>; <span class="keyword">return</span> <span class="number">1</span>; &#125;;</span><br><span class="line">    <span class="keyword">auto</span> dummyFunc = [](<span class="keyword">auto</span>... t) &#123;&#125;;</span><br><span class="line"></span><br><span class="line">    dummyFunc(exeFunc(args)...);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    TestVaradicTemplate&lt;<span class="keyword">bool</span>, <span class="keyword">int</span>, <span class="keyword">const</span> <span class="keyword">char</span>*&gt;(<span class="literal">false</span>, <span class="number">1024</span>, <span class="string">"Hello World"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面是输出：<br><img src="/2015/01/17/2015-01-17/variadic_template_result.png" alt="Image Title"></p>
+<p>有几点需要说明：</p>
+<ul>
+<li>Sample 1和Sample 2是两种最常见的使用方式，前者侧重执行功能，后者侧重参数传递。</li>
+<li>Sample 2中展示了一种变参展开并执行功能的技巧，同时参数可以继续传递下去。可以看到，结果中参数展开顺序是从右至左的，而若使用Clang编译，顺序会是从左至右，这依赖于编译器对函数参数求值顺序的实现。也正因如此，执行功能如果在意参数顺序，需格外注意。</li>
+<li>Sample 3是Sample 2的lambda实现形式。在某些情况下，直接在函数中采用lambda实现，会更灵活简洁。其中，exeFunc的return是必须的，否则返回类型为void，dummyFunc将无法接收其作为参数。</li>
+</ul>
+<p>变长参数模板是一种十分有用的特性，尤其在写公共库的时候，这点在<a href="https://github.com/KaleoFeng/MetaLua" target="_blank" rel="noopener">MetaLua</a>中得到了大量体现。</p>
 
           
         
@@ -432,7 +436,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/39/">39</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -475,7 +479,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">40</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -657,7 +661,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">74</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">76</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
