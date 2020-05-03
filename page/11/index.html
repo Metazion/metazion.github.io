@@ -303,7 +303,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 <a class="post-title-link" href="/2017/02/20/2017-02-20/" itemprop="url">
-                  深度概述select和epoll的工作原理
+                  深度剖析Select和Epoll的工作原理
                 </a>
               
             
@@ -399,7 +399,7 @@
 <p>内核里的软中断进程处理软中断，其找到该软中断对应的处理函数。软中断处理函数调用驱动里的相应函数处理数据包，转成内核网络模块可识别的skb格式，并将可合并的数据包合并，之后将数据包交给网络协议栈处理。所有数据包处理完成后，开启网卡硬中断。</p>
 <p>网络协议栈从下往上，一次进行链路层检查处理，网络层IP分片检查、IP分片合并、路由处理，传输层检查处理，找到对应的socket，并将数据包从内核空间移到用户空间，放置到socket读缓冲区。改变socket为可读状态，然后执行 <code>wakeup</code>, <code>wakeup</code> 会调用socket fd上的等待队列中的 <code>callback</code> 回调函数，</p>
 <h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>基于以上，select和epoll实现了各自的功能。</p>
-<h3 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h3><p>select相关重要函数：</p>
+<h3 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h3><p>Select相关重要函数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout)</span></span></span><br></pre></td></tr></table></figure>
 <p>Select最终会陷入内核，执行系统调用 <code>select</code>，3个fds从用户空间复制到内核空间。</p>
 <p>系统调用 <code>select</code> 中，会遍历fds，调用fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code> 会将 <code>select</code> 所在进程 <strong>current</strong> 和回调函数 <code>callback</code> 保存到socket fd的等待队列。如果某些fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，进而 <code>select</code> 可直接返回。否则，<code>select</code> 所在进程挂起。</p>
@@ -415,21 +415,21 @@
 <li><p>每次 <code>select</code>，都要遍历fds，加入socket fd等待队列1次，移出socket fd等待队列1次。</p>
 </li>
 </ul>
-<h3 id="epoll"><a href="#epoll" class="headerlink" title="epoll"></a>epoll</h3><p>有句名言：“计算机科学领域的任何问题都可以通过增加一个间接的中间层来解决”。</p>
-<p>面对select的各种问题，出现了epoll。epoll可以认为是一个中间层，它的中间层体现在，应用进程不再与socket fd有强关系，而是通过epoll来管理使用。</p>
-<p>epoll相关重要函数：</p>
+<h3 id="Epoll"><a href="#Epoll" class="headerlink" title="Epoll"></a>Epoll</h3><p>有句名言：“计算机科学领域的任何问题都可以通过增加一个间接的中间层来解决”。</p>
+<p>面对Select的各种问题，出现了Epoll。Epoll可以认为是一个中间层，它的中间层体现在，应用进程不再与socket fd有强关系，而是通过Epoll来管理使用。</p>
+<p>Epoll相关重要函数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">eventpoll_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd, <span class="keyword">int</span> op, <span class="keyword">int</span> fd, struct epoll_event* event)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event* events, <span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span></span><br></pre></td></tr></table></figure>
 <p>第一个函数 <code>eventpoll_init</code> 在系统初始化时由系统调用，目的是注册epoll文件系统，这里我们不关心。</p>
 <p>很直观的，上面select只有1个，这里有了3个。<code>epoll_create</code> 只会调用1次，<code>epoll_ctl</code> 每个socket fd调用1次，<code>epoll_wait</code> 类似 <code>select</code>，频繁调用。3个函数最终都会陷入内核，执行系统调用。</p>
-<p>Epoll 在<code>epoll_create</code>时， 返回一个epoll fd，没错，epoll对象也是个fd，是epoll文件系统的一个file节点。这就意味着它也有一组operations和wq等待队列。</p>
+<p>Epoll 在<code>epoll_create</code>时， 返回一个epoll fd，没错，epoll对象也是个fd，是epoll文件系统的一个file节点，这就意味着它也有一组operations和等待队列。</p>
 <p>Epoll使用红黑树来管理socket fd，<code>epoll_ctl</code> 时会将socket fd加入红黑树，这样保证了socket fd只会被加入一次，也只有一次从用户空间传递到内核空间，对比 <code>select</code> 的每次都加入、复制。</p>
-<p>Epoll在 <code>epoll_ctl</code> 时，调用socket fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code>会将回调函数 <code>callback</code> 保存到socket fd的等待队列，对比 <code>select</code> 的每次都加入移除。如果某些socket fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，将这些socket fd对应的eepitem加入到epoll <strong>就绪列表</strong>。</p>
+<p>Epoll在 <code>epoll_ctl</code> 时，调用socket fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code>会将回调函数 <code>callback</code> 保存到socket fd的等待队列，对比 <code>select</code> 的每次都加入移除。如果某些socket fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，将这些socket fd对应的eepitem加入到 <strong>epoll就绪列表</strong>。</p>
 <p>Epoll在 <code>epoll_wait</code> 时，会将 <code>epoll_wait</code> 所在进程 <strong>current</strong> 保存到epoll fd上的等待队列，对比 <code>select</code> 的加入每个socket fd等待队列。检查epoll就绪列表，若不空，<code>epoll_wait</code> 可直接返回。否则，<code>epoll_wait</code> 所在进程挂起。</p>
 <p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会唤醒epoll fd等待队列上的进程，即上面挂起的 <code>epoll_wait</code> 所在进程。</p>
 <p><code>epoll_wait</code> 当前进程继续执行。移除之前加入的epoll fd等待队列条目，对比 <code>select</code> 的移除之前加入的每个socket fd等待队列条目。遍历epoll就绪列表，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列，对比 <code>select</code> 的调用所有socket fd的 <code>poll</code> 函数。可读写的socket会返回其状态，将其从内核空间复制到用户空间。</p>
 <p>此处有一个点，即ET（边缘触发）和LT（水平触发）的区别。过程中，socket fd对应的epitem会从epoll就绪列表移除，LT模式下，最后会将其再加入到epoll就绪列表，而ET模式不会。</p>
 <p><code>epoll_wait</code> 系统调用执行完成，返回用户空间。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>对比Select和Epoll，select每次都跟socket fd强交互，而epoll只在第一次强交互，后续socket fd只是通过 <code>callback</code> 回调函数通知epoll，其余工作都由epoll这个中间层接管了，所以它就可以采取各种手段，提高性能。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>对比Select和Epoll，Select每次都跟socket fd强交互，而Epoll只在第一次强交互，后续socket fd只是通过 <code>callback</code> 回调函数通知epoll，其余工作都由Epoll这个中间层接管了，所以它就可以采取各种手段，提高性能。</p>
 
           
         
