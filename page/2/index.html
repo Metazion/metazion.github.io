@@ -406,6 +406,7 @@
 <p>调用即可。</p>
 <p>这样，该 <strong>字节码指令</strong> 解释执行即对应的方法调用就完成了。</p>
 <h2 id="话外"><a href="#话外" class="headerlink" title="话外"></a>话外</h2><p><code>invokeinterface</code> 比 <code>invokevirtual</code> 更复杂些，所以本文以此为例。</p>
+<p>为了便于理解，选择了 <strong>CPP解释器</strong> 的执行过程，<strong>模板解释器</strong> 过程是类似的，只是生成了机器码供运行时执行。</p>
 <p>结合前面两篇文章，这就是 <code>invoke</code> 类型的 <strong>字节码指令</strong> 解析引用并解释执行的主要过程。</p>
 
           

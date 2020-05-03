@@ -110,7 +110,7 @@
 <meta property="og:site_name" content="樂只君子">
 <meta property="og:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokeinterface 指令为例，分析 HotSpot JVM 如何解释执行 字节码指令 。 正文前面文章展示了从操作数解析出 符号引用 再解析出 直接引用 的过程，解析出的信息存储在 常量池缓存 中。那么这些信息是怎么使用的呢？ 直接上代码，因为代码较长，我们分段解释。 源码文件（openjdk\hotspot\src\s">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-04-30T12:59:13.530Z">
+<meta property="og:updated_time" content="2020-05-03T05:10:37.376Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HotSpot JVM源码分析 - 方法调用与解释执行（4）：由invoke指令看字节码指令如何解释执行">
 <meta name="twitter:description" content="本系列文章基于 OpenJDK 9，聚焦 x86 平台。 本文以 invokeinterface 指令为例，分析 HotSpot JVM 如何解释执行 字节码指令 。 正文前面文章展示了从操作数解析出 符号引用 再解析出 直接引用 的过程，解析出的信息存储在 常量池缓存 中。那么这些信息是怎么使用的呢？ 直接上代码，因为代码较长，我们分段解释。 源码文件（openjdk\hotspot\src\s">
@@ -403,6 +403,7 @@
 <p>调用即可。</p>
 <p>这样，该 <strong>字节码指令</strong> 解释执行即对应的方法调用就完成了。</p>
 <h2 id="话外"><a href="#话外" class="headerlink" title="话外"></a>话外</h2><p><code>invokeinterface</code> 比 <code>invokevirtual</code> 更复杂些，所以本文以此为例。</p>
+<p>为了便于理解，选择了 <strong>CPP解释器</strong> 的执行过程，<strong>模板解释器</strong> 过程是类似的，只是生成了机器码供运行时执行。</p>
 <p>结合前面两篇文章，这就是 <code>invoke</code> 类型的 <strong>字节码指令</strong> 解析引用并解释执行的主要过程。</p>
 
       
