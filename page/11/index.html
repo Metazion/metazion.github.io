@@ -386,7 +386,7 @@
             <p>为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整体有个宏观上的把握。</p>
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><strong>FD</strong>，文件描述符。Linux下，所有的操作都是对文件进行操作，这些操作是利用文件描述符来实现的。</p>
 <p>每个FD，都有一组operations，比如 <code>read</code>（读）、<code>write</code>（写）、<code>poll</code>（轮询）等。</p>
-<p>其poll操作有两个作用：</p>
+<p>其 <code>poll</code> 操作有两个作用：</p>
 <ul>
 <li><p>返回fd状态，比如可读、可写等</p>
 </li>
@@ -395,9 +395,9 @@
 </ul>
 <p>每个FD，还有一个等待队列，保存了数据（比如等待的进程）和 <code>callback</code> 回调函数。</p>
 <p>Socket也是fd，也有对应的 <code>poll</code> 操作和等待队列。</p>
-<p>以收到数据为例。网卡有数据包到来时，会通过DMA将数据包写到指定内存地址，然后发硬件中断信号通知CPU。CPU执行中断程序，中断程序会调用网卡驱动的相应函数，驱动先禁用网卡硬中断，再启动软中断。</p>
+<p>以收数据为例。网卡有数据包到来时，会通过DMA将数据包写到指定内存地址，然后发硬件中断信号通知CPU。CPU执行中断程序，中断程序会调用网卡驱动的相应函数，驱动先禁用网卡硬中断，再启动软中断。</p>
 <p>内核里的软中断进程处理软中断，其找到该软中断对应的处理函数。软中断处理函数调用驱动里的相应函数处理数据包，转成内核网络模块可识别的skb格式，并将可合并的数据包合并，之后将数据包交给网络协议栈处理。所有数据包处理完成后，开启网卡硬中断。</p>
-<p>网络协议栈从下往上，一次进行链路层检查处理，网络层IP分片检查、IP分片合并、路由处理，传输层检查处理，找到对应的socket，并将数据包从内核空间移到用户空间，放置到socket读缓冲区。改变socket为可读状态，然后执行 <code>wakeup</code>, <code>wakeup</code> 会调用socket fd上的等待队列中的 <code>callback</code> 回调函数，</p>
+<p>网络协议栈自底向上，依次进行链路层检查处理，网络层IP分片检查、IP分片合并、路由处理，传输层检查处理，找到对应的socket，并将数据包从内核空间移到用户空间，放置到socket读缓冲区。改变socket为可读状态，然后执行 <code>wakeup</code>, <code>wakeup</code> 会调用socket fd上的等待队列中的 <code>callback</code> 回调函数。</p>
 <h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>基于以上，select和epoll实现了各自的功能。</p>
 <h3 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h3><p>Select相关重要函数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout)</span></span></span><br></pre></td></tr></table></figure>
