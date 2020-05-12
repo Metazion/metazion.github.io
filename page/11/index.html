@@ -398,17 +398,17 @@
 <p>以收数据为例。网卡有数据包到来时，会通过DMA将数据包写到指定内存地址，然后发硬件中断信号通知CPU。CPU执行中断程序，中断程序会调用网卡驱动的相应函数，驱动先禁用网卡硬中断，再启动软中断。</p>
 <p>内核里的软中断进程处理软中断，其找到该软中断对应的处理函数。软中断处理函数调用驱动里的相应函数处理数据包，转成内核网络模块可识别的skb格式，并将可合并的数据包合并，之后将数据包交给网络协议栈处理。所有数据包处理完成后，开启网卡硬中断。</p>
 <p>网络协议栈自底向上，依次进行链路层检查处理，网络层IP分片检查、IP分片合并、路由处理，传输层检查处理，找到对应的socket，并将数据包从内核空间移到用户空间，放置到socket读缓冲区。改变socket为可读状态，然后执行 <code>wakeup</code>, <code>wakeup</code> 会调用socket fd上的等待队列中的 <code>callback</code> 回调函数。</p>
-<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>基于以上，select和epoll实现了各自的功能。</p>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>基于以上，Select和Epoll实现了各自的功能。</p>
 <h3 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h3><p>Select相关重要函数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout)</span></span></span><br></pre></td></tr></table></figure>
 <p>Select最终会陷入内核，执行系统调用 <code>select</code>，3个fds从用户空间复制到内核空间。</p>
 <p>系统调用 <code>select</code> 中，会遍历fds，调用fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code> 会将 <code>select</code> 所在进程 <strong>current</strong> 和回调函数 <code>callback</code> 保存到socket fd的等待队列。如果某些fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，进而 <code>select</code> 可直接返回。否则，<code>select</code> 所在进程挂起。</p>
 <p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会调用默认唤醒函数唤醒socket fd等待队列上保存的进程，即上面挂起的 <code>select</code> 所在进程。</p>
-<p><code>select</code> 当前进程继续执行。再次遍历fds，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列。可读写的socket会返回其状态，select将其加入3个fds。移除之前加入的所有socket fd等待队列条目。3个fds从内核空间复制到用户空间。</p>
+<p><code>select</code> 当前进程继续执行。再次遍历fds，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列。可读写的socket会返回其状态，select将其加入3个result fds。移除之前加入的所有socket fd等待队列条目。3个result fds从内核空间复制到用户空间。</p>
 <p><code>select</code> 系统调用执行完成，返回用户空间。</p>
 <p>观察上述过程，姑且不说 <code>select</code> 的socket fd数量限制问题，有3个方面影响了其性能：</p>
 <ul>
-<li><p>每次 <code>select</code> 前，都要将一堆socket加入fds；每次select后，都要遍历fds，获取各个socket状态，无论读写状态是不是真得改变了。</p>
+<li><p>每次 <code>select</code>，都要重新设置socket列表到fds。</p>
 </li>
 <li><p>每次 <code>select</code>，都要将fds从用户空间复制到内核空间，再从内核空间复制到用户空间。</p>
 </li>
@@ -425,7 +425,7 @@
 <p>Epoll使用红黑树来管理socket fd，<code>epoll_ctl</code> 时会将socket fd加入红黑树，这样保证了socket fd只会被加入一次，也只有一次从用户空间传递到内核空间，对比 <code>select</code> 的每次都加入、复制。</p>
 <p>Epoll在 <code>epoll_ctl</code> 时，调用socket fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code>会将回调函数 <code>callback</code> 保存到socket fd的等待队列，对比 <code>select</code> 的每次都加入移除。如果某些socket fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，将这些socket fd对应的eepitem加入到 <strong>epoll就绪列表</strong>。</p>
 <p>Epoll在 <code>epoll_wait</code> 时，会将 <code>epoll_wait</code> 所在进程 <strong>current</strong> 保存到epoll fd上的等待队列，对比 <code>select</code> 的加入每个socket fd等待队列。检查epoll就绪列表，若不空，<code>epoll_wait</code> 可直接返回。否则，<code>epoll_wait</code> 所在进程挂起。</p>
-<p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会唤醒epoll fd等待队列上的进程，即上面挂起的 <code>epoll_wait</code> 所在进程。</p>
+<p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会将socket fd对应的epitem添加到epoll就绪列表，并唤醒epoll fd等待队列上的进程，即上面挂起的 <code>epoll_wait</code> 所在进程。</p>
 <p><code>epoll_wait</code> 当前进程继续执行。移除之前加入的epoll fd等待队列条目，对比 <code>select</code> 的移除之前加入的每个socket fd等待队列条目。遍历epoll就绪列表，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列，对比 <code>select</code> 的调用所有socket fd的 <code>poll</code> 函数。可读写的socket会返回其状态，将其从内核空间复制到用户空间。</p>
 <p>此处有一个点，即ET（边缘触发）和LT（水平触发）的区别。过程中，socket fd对应的epitem会从epoll就绪列表移除，LT模式下，最后会将其再加入到epoll就绪列表，而ET模式不会。</p>
 <p><code>epoll_wait</code> 系统调用执行完成，返回用户空间。</p>
