@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/01/17/2015-01-17/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2015/02/03/2015-02-03/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2015/01/17/2015-01-17/" itemprop="url">
-                  C++14 变长参数模板（Variadic templates）的适用场景
+                <a class="post-title-link" href="/2015/02/03/2015-02-03/" itemprop="url">
+                  MySQL InnoDB存储引擎要点
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2015-01-17 22:08:00" itemprop="dateCreated datePublished" datetime="2015-01-17T22:08:00+08:00">2015-01-17</time>
+              <time title="创建时间：2015-02-03 18:00:00" itemprop="dateCreated datePublished" datetime="2015-02-03T18:00:00+08:00">2015-02-03</time>
             
 
             
@@ -383,17 +383,213 @@
       
         
           
-            <p>变长参数模板是C++14新增的特性。具体定义就不赘述了，我们更多关心的是这种特性用在什么地方。</p>
-<p>下面直接列出代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdint&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">Function</span><span class="params">(T t, Args... args)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    Function(args...);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">Function</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Dummy</span><span class="params">(Args... args)</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>... Args&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestVaradicTemplate</span><span class="params">(Args... args)</span> </span>&#123;</span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 1:\n"</span>);</span><br><span class="line">    Function(args...);</span><br><span class="line"></span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 2:\n"</span>);</span><br><span class="line">    Dummy(Function(args)...);</span><br><span class="line"></span><br><span class="line">    ::<span class="built_in">printf</span>(<span class="string">"---------------- Sample 3:\n"</span>);</span><br><span class="line">    <span class="keyword">auto</span> exeFunc = [](<span class="keyword">auto</span> t) &#123; <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>; <span class="keyword">return</span> <span class="number">1</span>; &#125;;</span><br><span class="line">    <span class="keyword">auto</span> dummyFunc = [](<span class="keyword">auto</span>... t) &#123;&#125;;</span><br><span class="line"></span><br><span class="line">    dummyFunc(exeFunc(args)...);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    TestVaradicTemplate&lt;<span class="keyword">bool</span>, <span class="keyword">int</span>, <span class="keyword">const</span> <span class="keyword">char</span>*&gt;(<span class="literal">false</span>, <span class="number">1024</span>, <span class="string">"Hello World"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>下面是输出：<br><img src="/2015/01/17/2015-01-17/variadic_template_result.png" alt="Image Title"></p>
-<p>有几点需要说明：</p>
+            <p>支持功能:</p>
 <ul>
-<li>Sample 1和Sample 2是两种最常见的使用方式，前者侧重执行功能，后者侧重参数传递。</li>
-<li>Sample 2中展示了一种变参展开并执行功能的技巧，同时参数可以继续传递下去。可以看到，结果中参数展开顺序是从右至左的，而若使用Clang编译，顺序会是从左至右，这依赖于编译器对函数参数求值顺序的实现。也正因如此，执行功能如果在意参数顺序，需格外注意。</li>
-<li>Sample 3是Sample 2的lambda实现形式。在某些情况下，直接在函数中采用lambda实现，会更灵活简洁。其中，exeFunc的return是必须的，否则返回类型为void，dummyFunc将无法接收其作为参数。</li>
+<li><p>行级锁</p>
+<ul>
+<li><p>四种锁：S（共享锁）、X（排他锁）、IS（意向共享锁）、IX（意向排他锁），前两种是行锁，后两种是表锁</p>
+</li>
+<li><p>意向锁是为了协调行锁和表锁的关系，加行锁前，必须先加相应意向锁，意向锁间相互兼容，意向锁和表锁有互斥关系</p>
+</li>
+<li><p>普通select不加锁，当前读select加共享锁，insert、update、delete加排他锁</p>
+</li>
+<li><p>三种行锁：Record Lock（记录锁），Gap Lock（间隙锁），Next-Key Lock（前两种结合）</p>
+</li>
+<li><p>行锁针对的是索引，唯一索引优化为Record，其他为Next-Key，注意死锁问题</p>
+</li>
 </ul>
-<p>变长参数模板是一种十分有用的特性，尤其在写公共库的时候，这点在<a href="https://github.com/KaleoFeng/MetaLua" target="_blank" rel="noopener">MetaLua</a>中得到了大量体现。</p>
+</li>
+<li><p>事务</p>
+<ul>
+<li><p>四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），隔离性通过MVCC和锁实现，原子性、持久性分别通过undo log（撤消日志）和redo log（重做日志）实现，一致性依赖前三者，由应用层保证满足约束条件。</p>
+</li>
+<li><p>通过redo log和undo log保证，前者写入文件，后者写入共享表空间，LSN（日志序列号）机制</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>存储结构：</p>
+<ul>
+<li><p>表空间（tablespace）</p>
+<ul>
+<li><p>共享表空间，存储undo信息、插入缓冲索引也、系统事务信息、两次写缓冲等</p>
+</li>
+<li><p>单独表空间（可选），存储数据、索引和插入缓冲Bitmap页</p>
+</li>
+<li><p>索引组织的，数据即索引，索引即数据，B+树结构</p>
+</li>
+</ul>
+</li>
+<li><p>段（segment）</p>
+<ul>
+<li><p>数据段</p>
+</li>
+<li><p>索引段</p>
+</li>
+<li><p>undo段</p>
+</li>
+</ul>
+</li>
+<li><p>区（extent）</p>
+</li>
+<li><p>页（page）</p>
+<ul>
+<li><p>数据页（B+ Tree Node）</p>
+</li>
+<li><p>undo页</p>
+</li>
+<li><p>系统页</p>
+</li>
+<li><p>事务数据页</p>
+</li>
+<li><p>插入缓冲位图页</p>
+</li>
+<li><p>插入缓冲空闲列表页</p>
+</li>
+<li><p>未压缩的二进制大对象页</p>
+</li>
+<li><p>压缩的二进制大对象页</p>
+</li>
+</ul>
+</li>
+<li><p>行（row）</p>
+<ul>
+<li>三个隐藏字段：隐藏的ID（可能）、6字节的事务ID（DB_TRX_ID）、 7字节的回滚指针（DB_ROLL_PTR）</li>
+</ul>
+</li>
+<li><p>实现上每个页对应一个B+ Tree Node，页大小和行大小决定了每个节点记录数</p>
+</li>
+<li><p>默认每个段4个区，每区64个页，每页16K，每行记录超出则行外存储至二进制大对象页</p>
+</li>
+<li><p>不考虑每页页头等数据，简化计算，非叶子节点每个条目至少包含一个8字节key和6字节指向子节点的指针，则每个非叶子节点最大可以有16K/14个条目；假设每条数据记录大小为1K，每个叶子节点页面可以存储16K/1K=16行数据记录；一个三层B+数最大可以存储(16K/14) x (16K/14) x (16K/1k) = 2191万行数据记录</p>
+</li>
+</ul>
+<p>缓冲池：</p>
+<ul>
+<li><p>普通缓冲池</p>
+<ul>
+<li><p>数据页</p>
+</li>
+<li><p>索引页</p>
+</li>
+<li><p>插入缓冲，辅助索引插入优化</p>
+</li>
+<li><p>自适应哈希索引，索引效率优化</p>
+</li>
+<li><p>锁信息</p>
+</li>
+<li><p>数据字典信息</p>
+</li>
+</ul>
+</li>
+<li><p>重做日志缓冲池</p>
+</li>
+<li><p>额外缓冲池</p>
+<ul>
+<li>缓冲池的数据结构本身、帧缓冲、缓冲控制对象等</li>
+</ul>
+</li>
+<li><p>两次写，LRU</p>
+</li>
+</ul>
+<p>索引 ：</p>
+<ul>
+<li><p>聚簇索引</p>
+<ul>
+<li>key为索引值，value为行数据</li>
+</ul>
+</li>
+<li><p>辅助索引</p>
+<ul>
+<li>key为索引值，value为聚簇索引键</li>
+</ul>
+</li>
+<li><p>采用B+树，非叶节点无数据，2到4层高度，减少磁盘IO次数</p>
+</li>
+</ul>
+<p>线程：</p>
+<ul>
+<li><p>Master Thread</p>
+<ul>
+<li>合并插入缓冲、脏页刷新（已单独）、undo页回收（已单独）等</li>
+</ul>
+</li>
+<li><p>IO Thread</p>
+<ul>
+<li>读（页）线程、写（页）线程、插入缓冲线程、日志线程</li>
+</ul>
+</li>
+<li><p>Purge Thread</p>
+<ul>
+<li>undo页回收</li>
+</ul>
+</li>
+<li><p>Page Cleaner Thread</p>
+<ul>
+<li>脏页刷新</li>
+</ul>
+</li>
+</ul>
+<p>MVCC:</p>
+<ul>
+<li><p>事务以排他锁的形式修改原始数据</p>
+</li>
+<li><p>把修改前的数据存放于undo log，通过回滚指针与主数据关联，同时会记录下该行数据对应的创建版本号，即生成该数据行的事务ID</p>
+</li>
+<li><p>修改成功（commit）什么都不做，失败则恢复undo log中的数据（rollback）</p>
+</li>
+<li><p>查询操作时，拿到当前ReadView，即事务快照，是当前时间点系统内活跃的（未提交的）事务列表，对比要查询的数据最新及至历史版本，可得可见版本的数据行</p>
+</li>
+</ul>
+<p>InnoDB的操作可以分为当前读(current read)和快照读(snapshot read)：</p>
+<ul>
+<li><p>快照读(snapshot read)</p>
+<ul>
+<li>普通select操作(不包括 select … for share, select … for update)</li>
+</ul>
+</li>
+<li><p>当前读(current read)</p>
+<ul>
+<li><p>select … for share</p>
+</li>
+<li><p>select … for update</p>
+</li>
+<li><p>insert</p>
+</li>
+<li><p>update</p>
+</li>
+<li><p>delete</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>快照读是通过MVCC来实现的，视隔离级别不同，采用不同的ReadView生成策略</p>
+<ul>
+<li><p>已提交读：每次读操作都会生成一个新的ReadView</p>
+</li>
+<li><p>可重复读：事务第一次进行读操作时才会生成一个ReadView</p>
+</li>
+</ul>
+<p>当前读是通过加锁来实现的，视隔离级别不同，采用不同的加锁策略</p>
+<ul>
+<li><p>已提交读：写加Record排它锁，事务结束释放；读加Record共享锁，事务结束释放</p>
+</li>
+<li><p>可重复读：写加Next-Key排它锁，事务结束释放；读加Next-Key共享锁，事务结束释放</p>
+</li>
+</ul>
+<p>未提交读：无MVCC，无锁</p>
+<p>可串行化：取消快照读，全为当前读</p>
+<p>隔离级别不同，索引类型不同，加锁策略也不同，比如同样是当前读，where key = 1：</p>
+<ul>
+<li><p>聚簇索引：RC和RR，数据记录加Record Lock</p>
+</li>
+<li><p>唯一索引：RC和RR，索引记录和数据记录均加Record Lock</p>
+</li>
+<li><p>非唯一索引：RC，索引记录和数据记录加Record Lock；RR，索引记录加Record Lock + Gap Lock，数据记录加Record Lock</p>
+</li>
+<li><p>非索引：RC，所有数据记录加Record Lock；RR，所有数据记录加Record Lock + Gap Lock；优化，不满足条件的记录释放锁</p>
+</li>
+</ul>
 
           
         
@@ -436,7 +632,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/24/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><span class="page-number current">25</span><a class="page-number" href="/page/26/">26</a><span class="space">&hellip;</span><a class="page-number" href="/page/41/">41</a><a class="extend next" rel="next" href="/page/26/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -479,7 +675,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">40</span>
+                    <span class="site-state-item-count">41</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -665,7 +861,15 @@
                     
                       
                     
-                    <span class="site-state-item-count">76</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">80</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

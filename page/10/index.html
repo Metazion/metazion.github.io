@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2017/08/12/2017-08-12/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2018/03/18/2018-03-18/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/08/12/2017-08-12/" itemprop="url">
-                  并发编程概述：内存屏障、Java volatile
+                <a class="post-title-link" href="/2018/03/18/2018-03-18/" itemprop="url">
+                  Spring Boot + Freemarker多语言国际化的实现
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2017-08-12 13:00:00" itemprop="dateCreated datePublished" datetime="2017-08-12T13:00:00+08:00">2017-08-12</time>
+              <time title="创建时间：2018-03-18 14:13:00" itemprop="dateCreated datePublished" datetime="2018-03-18T14:13:00+08:00">2018-03-18</time>
             
 
             
@@ -347,7 +347,7 @@
                 <span class="post-meta-item-text">分类于</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Lore/" itemprop="url" rel="index"><span itemprop="name">Lore</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Tech/" itemprop="url" rel="index"><span itemprop="name">Tech</span></a></span>
 
                 
                 
@@ -383,37 +383,29 @@
       
         
           
-            <p>并发编程三条特性：</p>
-<ul>
-<li><p>原子性<br>原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。</p>
-</li>
-<li><p>可见性<br>可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。</p>
-</li>
-<li><p>有序性<br>有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。</p>
-</li>
-</ul>
-<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
-<p><img src="/2017/08/12/2017-08-12/architecture.png" alt="architecture"></p>
-<h3 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h3><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
-<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
-<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>内存。</p>
-<p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
-<p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
-<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
-<p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
-<p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
-<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>针对InvalidateQueue，确保其被立即处理。</p>
-<h3 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h3><p>针对StoreBuffer，确保收到invalidate ack后数据写入缓存。</p>
-<p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
-<h2 id="Java-volatile"><a href="#Java-volatile" class="headerlink" title="Java volatile"></a>Java volatile</h2><p>Java volatile通过内存屏障，实现了可见性和有序性。</p>
-<h3 id="Java内存屏障"><a href="#Java内存屏障" class="headerlink" title="Java内存屏障"></a>Java内存屏障</h3><p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
-<p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
-<p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
-<p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
-<h3 id="顺序规则"><a href="#顺序规则" class="headerlink" title="顺序规则"></a>顺序规则</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br><span class="line">          |                   |</span><br><span class="line">          |                   |</span><br><span class="line">       LoadStore          StoreStore</span><br><span class="line">          |                   |                       <span class="keyword">volatile</span> Load</span><br><span class="line">          |___________________|_____StoreLoad_________________________</span><br><span class="line">             <span class="keyword">volatile</span> Store                       |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                               LoadLoad            LoadStore</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                        (<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br></pre></td></tr></table></figure>
-<p>Store蕴含写语义，Load蕴含读语义，写与读期望构建一种 happens-before 关系，即一边写，一边读，读到了写的结果，就表示写对读可见了，且写与读之间有了先后关系。同时如果写之前的先后关系，读之后的有先后关系，那么它们之间也就有了先后关系，这就是 happens-before。</p>
-<p>内存屏障确定了一种 happens-before 关系。</p>
-<p>类似的写/读语义，还有Release/Acquire，Unlock/Lock。</p>
+            <p>最近在写一些Web的东西，技术上采用了 <strong>Spring Boot</strong> + <strong>Bootstrap</strong> + <strong>jQuery</strong> + <strong>Freemarker</strong>。过程中查了大量的资料，也感受到了前端技术的分裂，每种东西都有N种实现，组合起来，每种解决方案的资料却很有限。</p>
+<p>这篇文章记录下多语言国际化的实现，以支持中英文为例。</p>
+<h3 id="页面内容的国际化"><a href="#页面内容的国际化" class="headerlink" title="页面内容的国际化"></a>页面内容的国际化</h3><p>1.定义页面文本配置文件的路径，在 <em>application.properties</em> 里添加 <code>spring.messages.basename=i18n/messages</code></p>
+<p>2.在 <em>resources/</em> 目录下创建上述目录，添加3个配置文件 <em>messages.properties</em>、<em>messages_zh.properties</em>、<em>messages_en.properties</em>，分别对应默认，中文和英文配置，完整路径为 <em>resources/i18n/messages.properties</em></p>
+<p>3.在配置文件里定义每条需要国际化的文本，比如中文 <code>index.title=麦希工具 - 您身边的助手</code>，英文 <code>Meta Tool - Your Best Assistant</code></p>
+<p>4.在Freemarker文件里使用 <code>&lt;@spring.message &quot;&quot;/&gt;</code> 来输出文本，比如 <code>&lt;title&gt;&lt;@spring.message &quot;index.title&quot;/&gt;&lt;/title&gt;</code></p>
+<h3 id="验证内容的国际化"><a href="#验证内容的国际化" class="headerlink" title="验证内容的国际化"></a>验证内容的国际化</h3><p>所谓验证内容，就是比如在填form表单的时候，有些字段有格式或数值等的要求，表单提交时，应该验证数据是否符合要求。验证又分前端验证和后端验证，一般结合使用。</p>
+<p>前端用来验证格式（必须是数字/英文/邮件）等，如：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"text"</span> <span class="attr">name</span>=<span class="string">"height"</span> <span class="attr">id</span>=<span class="string">"height"</span> <span class="attr">class</span>=<span class="string">"form-control col-2"</span> <span class="attr">placeholder</span>=<span class="string">""</span> <span class="attr">pattern</span>=<span class="string">"^[1-9][0-9]&#123;2&#125;$"</span> <span class="attr">required</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这里pattern使用正则表达式，定义了输入框输入字符的范围和数量。</p>
+<p>后端用来验证数值（必须大于18岁）等，可以在Spring Boot的VO对象里，以添加注解的形式实现，如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Min</span>(value = <span class="number">100</span>, message = <span class="string">"不能低于100cm"</span>)</span><br><span class="line"><span class="meta">@Max</span>(value = <span class="number">250</span>, message = <span class="string">"不能高于250cm"</span>)</span><br><span class="line"><span class="keyword">private</span> String height;</span><br></pre></td></tr></table></figure>
+<p>这里就出现了问题，即注解也应该采用配置文件的形式，以支持多语言切换，这就是验证内容的国际化。</p>
+<p>1.定义验证文本配置文件的路径，在 <em>application.properties</em> 里添加 <code>spring.messages.basename=i18n/messages,i18n/ValidationMessages</code>，前面的是第一节的页面文本，后面的是验证文本</p>
+<p>2.在 <em>resources/</em> 目录下创建上述目录，添加3个配置文件 <em>ValidationMessages.properties</em>、<em>ValidationMessages_zh.properties</em>、<em>ValidationMessages_en.properties</em>，分别对应默认，中文和英文配置，完整路径为 <em>resources/i18n/ValidationMessages.properties</em></p>
+<p>3.在配置文件里定义每条需要国际化的文本，比如中文 <code>vm.bmi.height.lower=不能低于100cm</code>，英文 <code>vm.bmi.height.lower=Can Not Lower Than 100cm</code></p>
+<p>4.与页面文本相比，这里要多做一步，即在代码里覆盖默认验证器的配置，在代码根目录添加以下文件：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomConfiguration</span> <span class="keyword">implements</span> <span class="title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> MessageSource messageSource;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Validator <span class="title">getValidator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> localValidatorFactoryBean();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> LocalValidatorFactoryBean <span class="title">localValidatorFactoryBean</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        LocalValidatorFactoryBean validator = <span class="keyword">new</span> LocalValidatorFactoryBean();</span><br><span class="line">        validator.setValidationMessageSource(messageSource);</span><br><span class="line">        <span class="keyword">return</span> validator;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>5.在接收表达的VO对象的属性上，使用验证文本作为提示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BmiVo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Min</span>(value = <span class="number">100</span>, message = <span class="string">"&#123;vm.bmi.height.lower&#125;"</span>)</span><br><span class="line">    <span class="meta">@Max</span>(value = <span class="number">250</span>, message = <span class="string">"&#123;vm.bmi.height.upper&#125;"</span>)</span><br><span class="line">    <span class="keyword">private</span> String height;</span><br></pre></td></tr></table></figure>
+<p>6.在表单上添加验证失败后的提示，使用 <code>&lt;@spring.bind &quot;&quot;/&gt;</code> 绑定VO对象的属性，使用 <code>&lt;@spring.showErrors &quot;&quot;/&gt;</code> 显示属性验证失败的提示：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"div-height"</span> <span class="attr">class</span>=<span class="string">"form-group form-row align-items-center"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">@spring.bind</span> "<span class="attr">vo.height</span>"/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">label</span> <span class="attr">for</span>=<span class="string">"height"</span> <span class="attr">class</span>=<span class="string">"col-form-label text-center offset-3 col-2"</span>&gt;</span><span class="tag">&lt;<span class="name">@spring.message</span> "<span class="attr">bmi.height</span>"/&gt;</span><span class="tag">&lt;/<span class="name">label</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"text"</span> <span class="attr">name</span>=<span class="string">"height"</span> <span class="attr">id</span>=<span class="string">"height"</span> <span class="attr">class</span>=<span class="string">"form-control col-2"</span> <span class="attr">placeholder</span>=<span class="string">""</span> <span class="attr">pattern</span>=<span class="string">"^[1-9][0-9]&#123;2&#125;$"</span> <span class="attr">required</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"text-primary text-center col-1"</span>&gt;</span>cm<span class="tag">&lt;/<span class="name">span</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"text-danger col-4"</span>&gt;</span><span class="tag">&lt;<span class="name">@spring.showErrors</span> ""/&gt;</span><span class="tag">&lt;/<span class="name">span</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这样就做到了页面内容和验证内容的多语言国际化支持，具体示例参看<a href="https://www.metazion.net" target="_blank" rel="noopener">Meta Tool</a></p>
 
           
         
@@ -456,7 +448,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/41/">41</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -499,7 +491,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">40</span>
+                    <span class="site-state-item-count">41</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -685,7 +677,15 @@
                     
                       
                     
-                    <span class="site-state-item-count">76</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">80</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

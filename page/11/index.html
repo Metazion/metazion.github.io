@@ -283,7 +283,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://qilu.me/2017/02/20/2017-02-20/">
+    <link itemprop="mainEntityOfPage" href="https://qilu.me/2017/08/12/2017-08-12/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Kaleo Feng">
@@ -302,8 +302,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/20/2017-02-20/" itemprop="url">
-                  深度剖析Select和Epoll的工作原理
+                <a class="post-title-link" href="/2017/08/12/2017-08-12/" itemprop="url">
+                  并发编程概述：内存屏障、Java volatile
                 </a>
               
             
@@ -329,7 +329,7 @@
                 
               
 
-              <time title="创建时间：2017-02-20 22:00:00" itemprop="dateCreated datePublished" datetime="2017-02-20T22:00:00+08:00">2017-02-20</time>
+              <time title="创建时间：2017-08-12 13:00:00" itemprop="dateCreated datePublished" datetime="2017-08-12T13:00:00+08:00">2017-08-12</time>
             
 
             
@@ -383,53 +383,37 @@
       
         
           
-            <p>为避免陷入代码和细节的汪洋大海中，本文尽量只做文字描述，并忽略一些细枝末节，目的是对整体有个宏观上的把握。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><strong>FD</strong>，文件描述符。Linux下，所有的操作都是对文件进行操作，这些操作是利用文件描述符来实现的。</p>
-<p>每个FD，都有一组operations，比如 <code>read</code>（读）、<code>write</code>（写）、<code>poll</code>（轮询）等。</p>
-<p>其 <code>poll</code> 操作有两个作用：</p>
+            <p>并发编程三条特性：</p>
 <ul>
-<li><p>返回fd状态，比如可读、可写等</p>
+<li><p>原子性<br>原子性是指一个操作是不可中断的，要么全部执行成功要么全部执行失败。</p>
 </li>
-<li><p>执行作为参数传入的 <code>proc</code> 处理函数</p>
+<li><p>可见性<br>可见性是指当一个线程修改了共享变量后，其他线程能够立即看见这个修改。</p>
+</li>
+<li><p>有序性<br>有序性是指程序指令按照预期的顺序执行而非乱序执行，乱序又分为编译器乱序和CPU执行乱序。</p>
 </li>
 </ul>
-<p>每个FD，还有一个等待队列，保存了数据（比如等待的进程）和 <code>callback</code> 回调函数。</p>
-<p>Socket也是fd，也有对应的 <code>poll</code> 操作和等待队列。</p>
-<p>以收数据为例。网卡有数据包到来时，会通过DMA将数据包写到指定内存地址，然后发硬件中断信号通知CPU。CPU执行中断程序，中断程序会调用网卡驱动的相应函数，先禁用网卡硬中断，再触发软中断。</p>
-<p>软中断处理函数调用驱动里的相应函数处理数据包，转成内核网络模块可识别的skb格式，之后将数据包交给网络协议栈处理。所有数据包处理完成后，开启网卡硬中断。</p>
-<p>网络协议栈自底向上，依次进行网络层IP层校验、IP分片与重组、路由检查与转发，传输层校验与处理，根据IP和端口找到对应的socket，将数据包放入socket接收队列。通知socket可读状态，执行 <code>wakeup</code>, <code>wakeup</code> 会调用socket fd上的等待队列中的 <code>callback</code> 回调函数。</p>
-<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>基于以上，Select和Epoll实现了各自的功能。</p>
-<h3 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h3><p>Select相关重要函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout)</span></span></span><br></pre></td></tr></table></figure>
-<p>Select最终会陷入内核，执行系统调用 <code>select</code>，3个fds从用户空间复制到内核空间。</p>
-<p>系统调用 <code>select</code> 中，会遍历fds，调用fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code> 会将 <code>select</code> 所在进程 <strong>current</strong> 和回调函数 <code>callback</code> 保存到socket fd的等待队列。如果某些fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，进而 <code>select</code> 可直接返回。否则，<code>select</code> 所在进程挂起。</p>
-<p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会调用默认唤醒函数唤醒socket fd等待队列上保存的进程，即上面挂起的 <code>select</code> 所在进程。</p>
-<p><code>select</code> 当前进程继续执行。再次遍历fds，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列。可读写的socket会返回其状态，select将其加入3个result fds。移除之前加入的所有socket fd等待队列条目。3个result fds从内核空间复制到用户空间。</p>
-<p><code>select</code> 系统调用执行完成，返回用户空间。</p>
-<p>观察上述过程，姑且不说 <code>select</code> 的socket fd数量限制问题，有3个方面影响了其性能：</p>
-<ul>
-<li><p>每次 <code>select</code>，都要重新设置socket列表到fds。</p>
-</li>
-<li><p>每次 <code>select</code>，都要将fds从用户空间复制到内核空间，再从内核空间复制到用户空间。</p>
-</li>
-<li><p>每次 <code>select</code>，都要遍历fds，加入socket fd等待队列1次，移出socket fd等待队列1次。</p>
-</li>
-</ul>
-<h3 id="Epoll"><a href="#Epoll" class="headerlink" title="Epoll"></a>Epoll</h3><p>有句名言：“计算机科学领域的任何问题都可以通过增加一个间接的中间层来解决”。</p>
-<p>面对Select的各种问题，出现了Epoll。Epoll可以认为是一个中间层，它的中间层体现在，应用进程不再与socket fd有强关系，而是通过Epoll来管理使用。</p>
-<p>Epoll相关重要函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">eventpoll_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd, <span class="keyword">int</span> op, <span class="keyword">int</span> fd, struct epoll_event* event)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event* events, <span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span></span><br></pre></td></tr></table></figure>
-<p>第一个函数 <code>eventpoll_init</code> 在系统初始化时由系统调用，目的是注册epoll文件系统，这里我们不关心。</p>
-<p>很直观的，上面select只有1个，这里有了3个。<code>epoll_create</code> 只会调用1次，<code>epoll_ctl</code> 每个socket fd调用1次，<code>epoll_wait</code> 类似 <code>select</code>，频繁调用。3个函数最终都会陷入内核，执行系统调用。</p>
-<p>Epoll 在<code>epoll_create</code>时， 返回一个epoll fd，没错，epoll对象也是个fd，是epoll文件系统的一个file节点，这就意味着它也有一组operations和等待队列。</p>
-<p>Epoll使用红黑树来管理socket fd，<code>epoll_ctl</code> 时会将socket fd加入红黑树，这样保证了socket fd只会被加入一次，也只有一次从用户空间传递到内核空间，对比 <code>select</code> 的每次都加入、复制。</p>
-<p>Epoll在 <code>epoll_ctl</code> 时，调用socket fd上的 <code>poll</code> 函数，其会调用传入的 <code>proc</code>。<code>proc</code>会将回调函数 <code>callback</code> 保存到socket fd的等待队列，对比 <code>select</code> 的每次都加入移除。如果某些socket fd已经有关注的可读/写等状态，<code>poll</code> 返回这些状态，将这些socket fd对应的eepitem加入到 <strong>epoll就绪列表</strong>。</p>
-<p>Epoll在 <code>epoll_wait</code> 时，会将 <code>epoll_wait</code> 所在进程 <strong>current</strong> 保存到epoll fd上的等待队列，对比 <code>select</code> 的加入每个socket fd等待队列。检查epoll就绪列表，若不空，<code>epoll_wait</code> 可直接返回。否则，<code>epoll_wait</code> 所在进程挂起。</p>
-<p>当socket读写状态改变时，<code>wakeup</code> 调用 <code>callback</code>。回调函数 <code>callback</code> 会将socket fd对应的epitem添加到epoll就绪列表，并唤醒epoll fd等待队列上的进程，即上面挂起的 <code>epoll_wait</code> 所在进程。</p>
-<p><code>epoll_wait</code> 当前进程继续执行。移除之前加入的epoll fd等待队列条目，对比 <code>select</code> 的移除之前加入的每个socket fd等待队列条目。遍历epoll就绪列表，调用socket fd的 <code>poll</code> 函数，这次传入的 <code>proc</code> 为空，所以不会再次加入等待队列，对比 <code>select</code> 的调用所有socket fd的 <code>poll</code> 函数。可读写的socket会返回其状态，将其从内核空间复制到用户空间。</p>
-<p>此处有一个点，即ET（边缘触发）和LT（水平触发）的区别。过程中，socket fd对应的epitem会从epoll就绪列表移除，LT模式下，最后会将其再加入到epoll就绪列表，而ET模式不会。</p>
-<p><code>epoll_wait</code> 系统调用执行完成，返回用户空间。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>对比Select和Epoll，Select每次都跟socket fd强交互，而Epoll只在第一次强交互，后续socket fd只是通过 <code>callback</code> 回调函数通知epoll，其余工作都由Epoll这个中间层接管了，所以它就可以采取各种手段，提高性能。</p>
+<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>首先展示一幅手绘图，概略描述单核和多核时的系统架构：</p>
+<p><img src="/2017/08/12/2017-08-12/architecture.png" alt="architecture"></p>
+<h3 id="Register"><a href="#Register" class="headerlink" title="Register"></a>Register</h3><p>寄存器。CPU指令执行，寄存器存放指令和数据，线程切换会进行寄存器保存和恢复操作。对线程而言，寄存器可以认为是私有的，即线程“工作内存”。多线程下，指令并发执行，操作各自工作内存，产生了原子性问题。</p>
+<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>CPU缓存。CPU缓存提升了数据加载速度的同时，也带来了缓存一致性问题，该问题通过MESI协议来解决。但MESI协议下，一个CPU可能需要等待另一个CPU响应后才能继续执行，导致了阻塞，影响性能。所以增加了StoreBuffer和InvalidateQueue，也就是需要store时先放到StoreBuffer里，然后继续执行下一条指令，等到其他CPU响应返回后再处理对应store；收到invalidate通知时也不立即处理，而是先放到InvalidateQueue，并立即给予对方响应，然后等到合适时机再一起处理。这种优化提升了CPU执行能力，但也使得MESI协议的操作无法立即得到处理，出现异步，产生了可见性和有序性问题。</p>
+<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>内存。</p>
+<p>单核环境下，多线程并发存在原子性问题和编译器乱序问题，因为Cache使用同一份，不存在可见性和CPU乱序问题。</p>
+<p>多核环境下，多线程并发存在原子性、可见性和有序性问题。</p>
+<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>针对上述情况，编译屏障可以解决编译乱序问题，内存屏障可以解决可见性和CPU乱序问题。</p>
+<p>编译屏障作用于编译期，阻止编译器因为优化等对代码进行重排序。</p>
+<p>内存屏障作用于指令执行期，又分为读屏障和写屏障。</p>
+<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>针对InvalidateQueue，确保其被立即处理。</p>
+<h3 id="写屏障"><a href="#写屏障" class="headerlink" title="写屏障"></a>写屏障</h3><p>针对StoreBuffer，确保收到invalidate ack后数据写入缓存。</p>
+<p>在内存屏障实现上，一般在单核上，即为编译器屏障，在多核上，包括编译屏障和读写屏障。</p>
+<h2 id="Java-volatile"><a href="#Java-volatile" class="headerlink" title="Java volatile"></a>Java volatile</h2><p>Java volatile通过内存屏障，实现了可见性和有序性。</p>
+<h3 id="Java内存屏障"><a href="#Java内存屏障" class="headerlink" title="Java内存屏障"></a>Java内存屏障</h3><p>LoadLoad屏障：对于这样的指令序列load1; loadload; load2，load1一定在load2之前执行完，CPU不会对load1和load2进行重排序。</p>
+<p>LoadStore屏障：对于这样的指令序列load1; loadstore; store1，load1一定在store1之前执行完，CPU不会对load1和store1进行重排序。</p>
+<p>StoreStore屏障：对于这样的指令序列store1; storestore; store2，store1一定在store2之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和store2进行重排序。</p>
+<p>StoreLoad屏障：对于这样的指令序列store1; storeload; load1，store1一定在load1之前执行完，store1的写入操作对其他CPU可见，CPU不会对store1和load1进行重排序。</p>
+<h3 id="顺序规则"><a href="#顺序规则" class="headerlink" title="顺序规则"></a>顺序规则</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br><span class="line">          |                   |</span><br><span class="line">          |                   |</span><br><span class="line">       LoadStore          StoreStore</span><br><span class="line">          |                   |                       <span class="keyword">volatile</span> Load</span><br><span class="line">          |___________________|_____StoreLoad_________________________</span><br><span class="line">             <span class="keyword">volatile</span> Store                       |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                               LoadLoad            LoadStore</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                                  |                   |</span><br><span class="line">                                        (<span class="keyword">volatile</span>)Load      (<span class="keyword">volatile</span>)Store</span><br></pre></td></tr></table></figure>
+<p>Store蕴含写语义，Load蕴含读语义，写与读期望构建一种 happens-before 关系，即一边写，一边读，读到了写的结果，就表示写对读可见了，且写与读之间有了先后关系。同时如果写之前的先后关系，读之后的有先后关系，那么它们之间也就有了先后关系，这就是 happens-before。</p>
+<p>内存屏障确定了一种 happens-before 关系。</p>
+<p>类似的写/读语义，还有Release/Acquire，Unlock/Lock。</p>
 
           
         
@@ -472,7 +456,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/10/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span><a class="page-number" href="/page/12/">12</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/12/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/10/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span><a class="page-number" href="/page/12/">12</a><span class="space">&hellip;</span><a class="page-number" href="/page/41/">41</a><a class="extend next" rel="next" href="/page/12/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -515,7 +499,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">40</span>
+                    <span class="site-state-item-count">41</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -701,7 +685,15 @@
                     
                       
                     
-                    <span class="site-state-item-count">76</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">80</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
